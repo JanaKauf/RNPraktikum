@@ -5,9 +5,11 @@
 #include "list.h"
 
 member_t * list = NULL;
+int counter = 0;
 
 int
-init_list (const char id[16], const uint32_t ip, const uint16_t port, const time_t time_stamp) {
+init_list (const char id[16], const uint32_t ip,
+				const uint16_t port, const time_t time_stamp) {
 	if (list != NULL) {
 		errno = EADDRINUSE;
 		return errno;
@@ -25,12 +27,14 @@ init_list (const char id[16], const uint32_t ip, const uint16_t port, const time
 	list->port = port;
 	list->time_stamp = time_stamp;
 	list->next = NULL;
+	counter++;
 
 	return 0;
 }
 
 int
-new_member (const char id[16], const uint32_t ip, const uint16_t port, const time_t time_stamp) {
+new_member (const char id[16], const uint32_t ip,
+				const uint16_t port, const time_t time_stamp) {
 	struct member * new_member = NULL;
 	struct member * p = NULL;
 
@@ -59,6 +63,7 @@ new_member (const char id[16], const uint32_t ip, const uint16_t port, const tim
 	for (p = list; p != NULL; p = p->next);
 
 	p = new_member;
+	counter++;
 
 	return 0;
 	
@@ -101,6 +106,7 @@ delete_member (const char id[16]) {
 
 	p->next = del_member->next;
 	free(del_member);
+	counter--;
 
 	return 0;
 	
@@ -122,8 +128,14 @@ delete_list (void) {
 		p = p->next;
 		free(previous);
 	}
+	counter = 0;
 
 	return 0;
 }
 
+int
+number_of_members(void) {
+	return counter;
+
+}
 

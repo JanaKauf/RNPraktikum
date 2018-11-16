@@ -1,19 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
-#include <signal.h>
 #include <pthread.h>
 
 pthread_t active;
 pthread_t passive;
+
+void *
+active_thread (void * args) {
+	printf("## active_thread started\n");
+}
+
+void *
+passive_thread (void * args) {
+	printf("## passive_thread started\n");
+}
 
 
 int

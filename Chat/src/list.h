@@ -12,16 +12,22 @@ typedef struct member {
 } member_t;
 
 
-int init_list (const char id[16],
+extern int init_list (const char id[16],
 		const uint32_t ip,
 		const uint16_t port,
 		const time_t time_stamp);
-int new_member (const char id[16],
-		const uint32_t ip,
-		const uint16_t port,
-		const time_t time_stamp);
-struct member * search_member (const char id[16]);
-int delete_member (const char id[16]);
-int delete_list (void);
 
-#endif // _LIST_H
+extern int new_member (const char id[16],
+		const uint32_t ip,
+		const uint16_t port,
+		const time_t time_stamp);
+
+extern struct member * search_member (const char id[16]);
+
+extern int delete_member (const char id[16]);
+
+extern int delete_list (void);
+
+extern int number_of_members (void);
+
+#endif /* _LIST_H */
