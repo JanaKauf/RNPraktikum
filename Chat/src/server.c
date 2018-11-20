@@ -26,6 +26,10 @@ struct addrinfo hints;
 struct sockaddr_storage their_addr;
 int yes = 1;
 
+fd_set master;
+fd_set read_fds;
+int fd_max;
+
 void *
 get_in_addr(struct sockaddr *sa) {
 
@@ -38,6 +42,9 @@ get_in_addr(struct sockaddr *sa) {
 int
 server_init(void) {
 	struct addrinfo *servlist, *p;
+
+	FD_ZERO(&master);
+	FD_ZERO(&read_fds);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -84,7 +91,78 @@ server_init(void) {
 
 	printf(" | server is listening\t:::\n");
 
+	FD_SET(sockfd, &master);
+	fd_max = sockfd;
+
 	return 0;
 }
 
+void *
+server_thread (void * args) {
+	int new_fd;
+	struct sockaddr_storage client_addr;
+	socklen_t addr_len;
+	char client_ip[INET6_ADDRSTRLEN];
+	int num_bytes;
+	char buf[1024];
 
+
+	printf("## server_thread started\n");
+
+	while (1) {
+		read_fds = master;
+        if (select(fd_max+1, &read_fds, NULL, NULL, NULL) == -1) {
+            perror("select");
+            exit(4);
+        }
+
+        for(int i = 0; i <= fd_max; i++) {
+            if (FD_ISSET(i, &read_fds)) {
+                if (i == sockfd) {
+                    addr_len = sizeof client_addr;
+                    new_fd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_len);
+
+                    if (new_fd == -1) {
+                        perror("accept");
+
+                    } else {
+                        FD_SET(new_fd, &master);
+
+                        if (new_fd > fd_max) {
+                            fd_max = new_fd;
+                        }
+
+                        printf("selectserver: new connection from %s on socket %d\n",
+								inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*)&client_addr),
+									client_ip, INET6_ADDRSTRLEN), new_fd);
+                    }
+                } else {
+                    if ((num_bytes = recv(i, buf, sizeof buf, 0)) <= 0) {
+                        if (num_bytes == 0) {
+                            printf("selectserver: socket %d hung up\n", i);
+
+                        } else {
+                            perror("recv");
+                        }
+
+                        close(i);
+                        FD_CLR(i, &master);
+                    } else {
+//                        // we got some data from a client
+//                        for(j = 0; j <= fdmax; j++) {
+//                            // send to everyone!
+//                            if (FD_ISSET(j, &master)) {
+//                                // except the listener and ourselves
+//                              if (j != listener && j != i) {
+//                                   if (send(j, buf, nbytes, 0) == -1) {
+//                                        perror("send");
+//                                    }
+//                                }
+//                            }
+//                      }
+                    }
+                }
+            } 
+		}
+    }
+}

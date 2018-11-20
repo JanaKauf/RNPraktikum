@@ -4,22 +4,51 @@
 #include <string.h>
 
 int
-sign_in (void * buff) {
+recv_sign_in (void * buff) {
 	return 0;
 }
 
 int
-sign_up (void * buff) {
+recv_sign_up (void * buff) {
 	return 0;
 }
 
 int
-msg (void * buff) {
+_recv_msg (void * buff) {
 	return 0;
 }
 
 int
-member_list (void * buff) {
+recv_member_list (void * buff) {
 	return 0;
 }
 
+int
+recv_error(void *buff) {
+	return 0;
+}
+
+int
+send_sign_in (void * buff) {
+	return 0;
+}
+
+int
+send_sign_up (void * buff) {
+	return 0;
+}
+
+int
+send_msg (void * buff) {
+	return 0;
+}
+
+int
+send_member_list (void * buff) {
+	return 0;
+}
+
+int
+send_error(void *buff) {
+	return 0;
+}

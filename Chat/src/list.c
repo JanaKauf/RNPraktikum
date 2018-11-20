@@ -9,7 +9,7 @@ int counter = 0;
 
 int
 init_list (const char id[16], const uint32_t ip,
-				const uint16_t port, const time_t time_stamp) {
+				const uint16_t port) {
 	if (list != NULL) {
 		errno = EADDRINUSE;
 		return errno;
@@ -25,7 +25,6 @@ init_list (const char id[16], const uint32_t ip,
 	memcpy(list->id, id, strlen(id)+1);
 	list->ip = ip;
 	list->port = port;
-	list->time_stamp = time_stamp;
 	list->next = NULL;
 	counter++;
 
@@ -34,7 +33,7 @@ init_list (const char id[16], const uint32_t ip,
 
 int
 new_member (const char id[16], const uint32_t ip,
-				const uint16_t port, const time_t time_stamp) {
+				const uint16_t port) {
 	struct member * new_member = NULL;
 	struct member * p = NULL;
 
@@ -57,7 +56,6 @@ new_member (const char id[16], const uint32_t ip,
 	memcpy(list->id, id, strlen(id)+1);
 	new_member->ip = ip;
 	new_member->port = port;
-	new_member->time_stamp = time_stamp;
 	new_member->next = NULL;
 
 	for (p = list; p != NULL; p = p->next);

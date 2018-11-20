@@ -12,6 +12,7 @@
 #define HOLD_QUEUE 20
 
 extern int server_init(void);
+extern void * server_thread (void * args);
 
 
 #endif /* SRC_SERVER_H_ */
