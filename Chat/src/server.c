@@ -64,12 +64,6 @@ server_init(void) {
 			continue;
 		}
 
-	uint32_t crc;
-	uint16_t length;
-	char * buf = buffer;
-
-	length = (uint16_t) buf[2] << 8 | buf[3];
-	crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
 		if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 			perror("server: setsockopt");
 			errno = EPERM;
@@ -165,19 +159,19 @@ server_thread (void * args) {
 						
 						switch (type) {
 							case 1:
-								job.routineForTask = recv_sign_in;
+								job.routine_for_task = recv_sign_in;
 								break;
 							case 2:
-								job.routineForTask = recv_sign_up;
+								job.routine_for_task = recv_quit;
 								break;
 							case 3:
-								job.routineForTask = recv_member_list;
+								job.routine_for_task = recv_member_list;
 								break;
 							case 4:
-								job.routineForTask = recv_msg;
+								job.routine_for_task = recv_msg;
 								break;
 							case 5:
-								job.routineForTask = recv_error;
+								job.routine_for_task = recv_error;
 								break;
 							default:
 								printf("server_thread: error type!\n");
@@ -186,7 +180,7 @@ server_thread (void * args) {
 						}
 
 						thpool_add_task(pool, job, 1);
-						printf("Task added.\n");
+						printf("Task added.");
                     }
                 }
             } 

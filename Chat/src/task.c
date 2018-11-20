@@ -16,7 +16,7 @@ recv_sign_in (void * buffer) {
 }
 
 void
-recv_sign_up (void * buffer) {
+recv_quit (void * buffer) {
 	uint32_t crc;
 	uint16_t length;
 	char * buf = buffer;
@@ -61,7 +61,7 @@ send_sign_in (void * buffer) {
 }
 
 void
-send_sign_up (void * buffer) {
+send_quit (void * buffer) {
 }
 
 void

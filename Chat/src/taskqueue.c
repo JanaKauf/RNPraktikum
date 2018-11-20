@@ -52,12 +52,10 @@ mqd_t
 taskqueue_create(const char *name, const unsigned int size){
    struct mq_attr attr;
 
-   // Set up the attribute structure
    attr.mq_maxmsg = size;
    attr.mq_msgsize = MSG_SIZE;
    attr.mq_flags = 0;
 
-   // check parameter of message queue
    int x = 0;
    read_int_from_file(PROC_FS_MSG_MAX, &x);
    if (x < size) {
@@ -71,7 +69,6 @@ taskqueue_create(const char *name, const unsigned int size){
       exit(EXIT_FAILURE);
    }
 
-   // Set access mode to read & write for owner & group; to read for others
    mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH;
 
    mqd_t mqdes = mq_open (name, O_RDWR | O_CREAT, mode, &attr);

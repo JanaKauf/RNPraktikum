@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 struct task {
-   void (*routineForTask)(void *arg); 
+   void (*routine_for_task)(void *arg); 
    void *arg;	
 };
 

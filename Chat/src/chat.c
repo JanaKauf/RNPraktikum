@@ -6,6 +6,7 @@
 #include "server.h"
 #include "taskqueue.h"
 #include "thpool.h"
+#include "task.h"
 
 pthread_t serv_thread;
 mqd_t task_queue;
@@ -14,37 +15,46 @@ struct threadpool * pool;
 
 void *
 cmd_thread (void *args ) {
-	char id;
 	char msg[1024];
-	char name_id[16];
-	char cmd[10];
-	char ip_addr[16];
+	char space[] = " ";
+	char *cmd;
+
+	struct task job;
 
 	while(1) {
 		fflush(stdin);
-		id = (char) getc(stdin);
+		fgets(msg, 1024, stdin);
 
-		if (id == '@') {
-			fgets(name_id, 16, stdin);
-			fgets(msg, 1024, stdin);
-		
-		} else if(id == '/') {
-			fgets(cmd, 10, stdin);
-			if (strcmp(cmd, "connect") == 0) {
-				fgets(ip_addr, 16, stdin);
-			
-			} else if (strcmp(cmd, "quit") == 0) {
-			
-			} else if (strcmp(cmd, "info") == 0) {
-			
-			} else {
-				printf("usage.... ");
-			}
+		job.arg = msg;
+
+		if (msg[0] == '@') {
+			job.routine_for_task = send_msg;
+			thpool_add_task(pool, job, 1);
 		
 		} else {
-			printf("usage....");
-		}
+
+			cmd = strtok(msg, space);
+
+			if (strcmp(cmd, "/connect") == 0) {
+				job.routine_for_task = send_sign_in;
+				thpool_add_task(pool, job, 1);
 		
+			} else if (strcmp(cmd, "/quit") == 0) {
+				job.routine_for_task = send_quit;
+				thpool_add_task(pool, job, 1);
+		
+			} else if (strcmp(cmd, "/info") == 0){
+			
+			} else if (strcmp(cmd, "/help") == 0){
+			
+			} else {
+				continue;
+			}
+		}
+
+
+
+			
 	}
 }
 
