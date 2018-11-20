@@ -15,12 +15,32 @@
 
 
 int sockfd;
-struct addrinfo hints;
-int yes = 1;
 
 int
-client_init (char * server_ip) {
+send_all_data (char *buf, int *length) {
+	int total = 0;
+	int bytes_left = *length;
+	int n;
+
+	while (total < *length) {
+		n = send(sockfd, buf+total, bytes_left, 0);
+		if (n == -1)
+			break;
+		total += n;
+		bytes_left -= n;
+	}
+
+	*length = total;
+
+	return n==-1?-1:0;
+}
+
+int
+client_connect_send (char * server_ip, char * buf) {
 	struct addrinfo *servlist, *p;
+	struct addrinfo hints;
+	int yes = 1;
+	int length = strlen(buf);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -52,38 +72,16 @@ client_init (char * server_ip) {
 		return errno;
 	}
 
+	if (send_all_data(buf, &length) == -1) {
+		errno = EPERM;
+		printf("Only send %d bytes\n", length);
+		close(sockfd);
+		return errno;
+	
+	}
+
+	close(sockfd);	
+
 	return 0;
 }
 
-void *
-client_thread (void *args ) {
-	char id;
-	char msg[1024];
-	char name_id[16];
-	char cmd[10];
-
-	while(1) {
-		fflush(stdin);
-		id = (char) getc(stdin);
-
-		if (id == '@') {
-			fgets(name_id, 16, stdin);
-			fgets(msg, 1024, stdin);
-		
-		} else if(id == '/') {
-			fgets(cmd, 10, stdin);
-			
-			if (strcmp(cmd, "quit") == 0) {
-			
-			} else if (strcmp(cmd, "info") == 0) {
-			
-			} else {
-				printf("usage.... ");
-			}
-		
-		} else {
-			printf("usage....");
-		}
-		
-	}
-}

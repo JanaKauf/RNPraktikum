@@ -2,53 +2,76 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <stdint.h>
 
-int
-recv_sign_in (void * buff) {
-	return 0;
+
+void
+recv_sign_in (void * buffer) {
+	uint32_t crc;
+	uint16_t length;
+	char * buf = buffer;
+
+	length = (uint16_t) buf[2] << 8 | buf[3];
+	crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
 }
 
-int
-recv_sign_up (void * buff) {
-	return 0;
+void
+recv_sign_up (void * buffer) {
+	uint32_t crc;
+	uint16_t length;
+	char * buf = buffer;
+
+	length = (uint16_t) buf[2] << 8 | buf[3];
+	crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
 }
 
-int
-_recv_msg (void * buff) {
-	return 0;
+void
+recv_msg (void * buffer) {
+	uint32_t crc;
+	uint16_t length;
+	char * buf = buffer;
+
+	length = (uint16_t) buf[2] << 8 | buf[3];
+	crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
 }
 
-int
-recv_member_list (void * buff) {
-	return 0;
+void
+recv_member_list (void * buffer) {
+	uint32_t crc;
+	uint16_t length;
+	char * buf = buffer;
+
+	length = (uint16_t) buf[2] << 8 | buf[3];
+	crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
+
 }
 
-int
-recv_error(void *buff) {
-	return 0;
+void
+recv_error(void *buffer) {
+	uint32_t crc;
+	uint16_t length;
+	char * buf = buffer;
+
+	length = (uint16_t) buf[2] << 8 | buf[3];
+	crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
 }
 
-int
-send_sign_in (void * buff) {
-	return 0;
+void
+send_sign_in (void * buffer) {
 }
 
-int
-send_sign_up (void * buff) {
-	return 0;
+void
+send_sign_up (void * buffer) {
 }
 
-int
-send_msg (void * buff) {
-	return 0;
+void
+send_msg (void * buffer) {
 }
 
-int
-send_member_list (void * buff) {
-	return 0;
+void
+send_member_list (void * buffer) {
 }
 
-int
-send_error(void *buff) {
-	return 0;
+void
+send_error(void *buffer) {
 }

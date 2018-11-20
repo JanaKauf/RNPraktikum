@@ -19,6 +19,8 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include "thpool.h"
+#include "task.h"
 
 
 int sockfd;
@@ -62,6 +64,12 @@ server_init(void) {
 			continue;
 		}
 
+	uint32_t crc;
+	uint16_t length;
+	char * buf = buffer;
+
+	length = (uint16_t) buf[2] << 8 | buf[3];
+	crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
 		if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 			perror("server: setsockopt");
 			errno = EPERM;
@@ -106,12 +114,16 @@ server_thread (void * args) {
 	int num_bytes;
 	char buf[1024];
 
+	struct threadpool * pool = args;
+	struct task job;
+
+	uint8_t type;
 
 	printf("## server_thread started\n");
 
 	while (1) {
 		read_fds = master;
-        if (select(fd_max+1, &read_fds, NULL, NULL, NULL) == -1) {
+        if (select(fd_max + 1, &read_fds, NULL, NULL, NULL) == -1) {
             perror("select");
             exit(4);
         }
@@ -132,14 +144,14 @@ server_thread (void * args) {
                             fd_max = new_fd;
                         }
 
-                        printf("selectserver: new connection from %s on socket %d\n",
+                        printf("server_thread: new connection from %s on socket %d\n",
 								inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*)&client_addr),
 									client_ip, INET6_ADDRSTRLEN), new_fd);
                     }
                 } else {
                     if ((num_bytes = recv(i, buf, sizeof buf, 0)) <= 0) {
                         if (num_bytes == 0) {
-                            printf("selectserver: socket %d hung up\n", i);
+                            printf("server_thread: socket %d hung up\n", i);
 
                         } else {
                             perror("recv");
@@ -148,18 +160,33 @@ server_thread (void * args) {
                         close(i);
                         FD_CLR(i, &master);
                     } else {
-//                        // we got some data from a client
-//                        for(j = 0; j <= fdmax; j++) {
-//                            // send to everyone!
-//                            if (FD_ISSET(j, &master)) {
-//                                // except the listener and ourselves
-//                              if (j != listener && j != i) {
-//                                   if (send(j, buf, nbytes, 0) == -1) {
-//                                        perror("send");
-//                                    }
-//                                }
-//                            }
-//                      }
+						type = buf[1];
+						job.arg = buf;
+						
+						switch (type) {
+							case 1:
+								job.routineForTask = recv_sign_in;
+								break;
+							case 2:
+								job.routineForTask = recv_sign_up;
+								break;
+							case 3:
+								job.routineForTask = recv_member_list;
+								break;
+							case 4:
+								job.routineForTask = recv_msg;
+								break;
+							case 5:
+								job.routineForTask = recv_error;
+								break;
+							default:
+								printf("server_thread: error type!\n");
+								continue;
+								break;
+						}
+
+						thpool_add_task(pool, job, 1);
+						printf("Task added.\n");
                     }
                 }
             } 
