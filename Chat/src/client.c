@@ -14,16 +14,14 @@
 #include "client.h"
 
 
-int sockfd;
-
 int
-send_all_data (char *buf, int *length) {
+send_all_data (char *buf, int *length, int * socket) {
 	int total = 0;
 	int bytes_left = *length;
 	int n;
 
 	while (total < *length) {
-		n = send(sockfd, buf+total, bytes_left, 0);
+		n = send(*socket, buf+total, bytes_left, 0);
 		if (n == -1)
 			break;
 		total += n;
@@ -36,11 +34,26 @@ send_all_data (char *buf, int *length) {
 }
 
 int
-client_connect_send (char * server_ip, char * buf) {
+client_send (int * socket, char * buf) {
+	int length = strlen(buf);
+
+	if (send_all_data(buf, &length, socket) == -1) {
+		errno = EPERM;
+		printf("Only send %d bytes\n", length);
+		close(*socket);
+		return errno;
+	
+	}
+
+	return 0;
+}
+
+int
+client_connect (char * server_ip) {
+	int sockfd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
 	int yes = 1;
-	int length = strlen(buf);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -48,7 +61,7 @@ client_connect_send (char * server_ip, char * buf) {
 
 	if((errno = getaddrinfo(server_ip, PORT, &hints, &servlist)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errno));
-		return 1;
+		return -1;
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
@@ -72,16 +85,6 @@ client_connect_send (char * server_ip, char * buf) {
 		return errno;
 	}
 
-	if (send_all_data(buf, &length) == -1) {
-		errno = EPERM;
-		printf("Only send %d bytes\n", length);
-		close(sockfd);
-		return errno;
-	
-	}
-
-	close(sockfd);	
-
-	return 0;
+	return sockfd;
 }
 

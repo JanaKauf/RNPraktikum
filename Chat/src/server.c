@@ -113,10 +113,34 @@ server_thread (void * args) {
 
 	uint8_t type;
 
+	if (server_init() != 0) {
+		return &errno;
+	}
+
 	printf("## server_thread started\n");
 
-	while (1) {
-		read_fds = master;
+	for(;;) {
+		
+        addr_len = sizeof client_addr;
+        new_fd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_len);
+
+        if (new_fd == -1) {
+			perror("accept");
+			continue;
+		}
+
+        printf("server_thread: new connection from %s on socket %d\n",
+				inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*)&client_addr),
+				client_ip, INET6_ADDRSTRLEN), new_fd);
+
+		job.routine_for_task = recv_from_client;
+		job.arg = &new_fd;
+
+		thpool_add_task(pool, job, 1);
+		printf("Task added.");
+	}
+
+/*		read_fds = master;
         if (select(fd_max + 1, &read_fds, NULL, NULL, NULL) == -1) {
             perror("select");
             exit(4);
@@ -143,6 +167,9 @@ server_thread (void * args) {
 									client_ip, INET6_ADDRSTRLEN), new_fd);
                     }
                 } else {
+
+
+
                     if ((num_bytes = recv(i, buf, sizeof buf, 0)) <= 0) {
                         if (num_bytes == 0) {
                             printf("server_thread: socket %d hung up\n", i);
@@ -185,5 +212,5 @@ server_thread (void * args) {
                 }
             } 
 		}
-    }
+    }*/
 }

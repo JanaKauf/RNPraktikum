@@ -68,7 +68,7 @@ new_member (const char id[16], const uint32_t ip,
 }
 
 struct member *
-search_member (const char id[16]) {
+search_member_id (const char id[16]) {
 	struct member * p = NULL;
 
 	if (list == NULL) {
@@ -78,6 +78,24 @@ search_member (const char id[16]) {
 
 	for (p = list; p->next != NULL; p = p->next){
 		if ((strcmp(id, p->id)) == 0) {
+			return p;
+		}
+	}
+
+	return NULL;
+}
+
+struct member *
+search_member_ip (const uint32_t ip) {
+	struct member * p = NULL;
+
+	if (list == NULL) {
+		errno = EADDRNOTAVAIL;
+		return NULL;
+	}
+
+	for (p = list; p->next != NULL; p = p->next){
+		if (p->ip == ip) {
 			return p;
 		}
 	}
