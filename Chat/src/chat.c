@@ -78,10 +78,6 @@ cmd_routine (void *args ) {
 int
 main (int argc, char *argv[]) {
 
-	if (init_list("Raupe\0", ) == 0) {
-		return 1;
-	}
-
 	task_recv = taskqueue_create("TASK_RECV", 20);
 	if ((recv_pool = thpool_create(task_recv)) == NULL) {
 		taskqueue_destroy("TASK_QUEUE");

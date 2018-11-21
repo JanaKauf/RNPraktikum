@@ -19,8 +19,11 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 #include "thpool.h"
 #include "task.h"
+#include "list.h"
 
 
 int sockfd;
@@ -28,28 +31,15 @@ struct addrinfo hints;
 struct sockaddr_storage their_addr;
 int yes = 1;
 
-fd_set master;
-fd_set read_fds;
-int fd_max;
-
-void *
-get_in_addr(struct sockaddr *sa) {
-
-	if (sa->sa_family == AF_INET)
-		return &(((struct sockaddr_in*)sa)->sin_addr);
-
-	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
 int
 server_init(void) {
 	struct addrinfo *servlist, *p;
 
-	FD_ZERO(&master);
-	FD_ZERO(&read_fds);
+	struct ifreq ifr;
+	strcpy(ifr.ifr_name, "wlp3s0");
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
@@ -85,6 +75,14 @@ server_init(void) {
 		return errno;
 	}
 
+	if (ioctl(sockfd, SIOCGIFADDR, &ifr) != 0) {
+		perror("ioctl: ");
+		return -1;
+	}
+
+	if (init_list("Raupe\0", ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr, 6100) == 0) {
+		return 1;
+	}
 
 	if(listen(sockfd, HOLD_QUEUE) == -1) {
 		errno = EPERM;
@@ -93,8 +91,6 @@ server_init(void) {
 
 	printf(" | server is listening\t:::\n");
 
-	FD_SET(sockfd, &master);
-	fd_max = sockfd;
 
 	return 0;
 }
@@ -104,7 +100,7 @@ server_thread (void * args) {
 	int new_fd;
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len;
-	char client_ip[INET6_ADDRSTRLEN];
+	char client_ip[INET_ADDRSTRLEN];
 	int num_bytes;
 	char buf[1024];
 
@@ -130,8 +126,8 @@ server_thread (void * args) {
 		}
 
         printf("server_thread: new connection from %s on socket %d\n",
-				inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*)&client_addr),
-				client_ip, INET6_ADDRSTRLEN), new_fd);
+				inet_ntop(client_addr.ss_family, &(((struct sockaddr_in*)&client_addr)->sin_addr),
+				client_ip, INET_ADDRSTRLEN), new_fd);
 
 		job.routine_for_task = recv_from_client;
 		job.arg = &new_fd;
@@ -140,77 +136,4 @@ server_thread (void * args) {
 		printf("Task added.");
 	}
 
-/*		read_fds = master;
-        if (select(fd_max + 1, &read_fds, NULL, NULL, NULL) == -1) {
-            perror("select");
-            exit(4);
-        }
-
-        for(int i = 0; i <= fd_max; i++) {
-            if (FD_ISSET(i, &read_fds)) {
-                if (i == sockfd) {
-                    addr_len = sizeof client_addr;
-                    new_fd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_len);
-
-                    if (new_fd == -1) {
-                        perror("accept");
-
-                    } else {
-                        FD_SET(new_fd, &master);
-
-                        if (new_fd > fd_max) {
-                            fd_max = new_fd;
-                        }
-
-                        printf("server_thread: new connection from %s on socket %d\n",
-								inet_ntop(client_addr.ss_family, get_in_addr((struct sockaddr*)&client_addr),
-									client_ip, INET6_ADDRSTRLEN), new_fd);
-                    }
-                } else {
-
-
-
-                    if ((num_bytes = recv(i, buf, sizeof buf, 0)) <= 0) {
-                        if (num_bytes == 0) {
-                            printf("server_thread: socket %d hung up\n", i);
-
-                        } else {
-                            perror("recv");
-                        }
-
-                        close(i);
-                        FD_CLR(i, &master);
-                    } else {
-						type = buf[1];
-						job.arg = buf;
-						
-						switch (type) {
-							case 1:
-								job.routine_for_task = recv_sign_in;
-								break;
-							case 2:
-								job.routine_for_task = recv_quit;
-								break;
-							case 3:
-								job.routine_for_task = recv_member_list;
-								break;
-							case 4:
-								job.routine_for_task = recv_msg;
-								break;
-							case 5:
-								job.routine_for_task = recv_error;
-								break;
-							default:
-								printf("server_thread: error type!\n");
-								continue;
-								break;
-						}
-
-						thpool_add_task(pool, job, 1);
-						printf("Task added.");
-                    }
-                }
-            } 
-		}
-    }*/
 }

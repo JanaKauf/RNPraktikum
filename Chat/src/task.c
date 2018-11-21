@@ -172,7 +172,19 @@ recv_msg (char * msg, const uint32_t ip) {
 }
 
 void
-recv_member_list (char * buffer) {
+recv_member_list (char * buffer, uint16_t length) {
+	uint32_t ip;
+	uint16_t port;
+	char id[16];
+
+	int counter = 0;
+
+	for (int i = 0; i < length; i++) {
+		ip = (uint32_t) buffer[0+counter] << 24 | buffer[1+counter] << 16 | buffer[2+counter] << 8 | buffer[3+counter];
+		port = (uint16_t) buffer[4+counter] << 8 | buffer[5+counter];
+		id = 
+		counter += 22;
+	}
 
 }
 
@@ -232,7 +244,7 @@ recv_from_client (void * socket) {
 				close(*new_fd);
 				break;
 			case 3:
-				recv_member_list(payload);
+				recv_member_list(payload, length);
 				break;
 			case 4:
 				recv_msg(payload, client_ip.sin_addr.s_addr);

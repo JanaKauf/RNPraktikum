@@ -4,9 +4,9 @@
 #include <time.h>
 
 typedef struct member {
-	char 			id[16];
 	uint32_t		ip;
 	uint16_t		port;
+	char 			id[16];
 	struct member*	next;
 } member_t;
 
