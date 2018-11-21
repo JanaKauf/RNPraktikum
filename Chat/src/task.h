@@ -4,7 +4,7 @@
 
 //###################CONNECT_TASKS#######################
 
-void connect_to_server (char * server_ip, void * new_socket);
+void connect_to_server (void*);
 void disconnect_from_server (void * socket);
 
 //###################SEND_TASKS#######################

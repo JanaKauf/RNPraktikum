@@ -17,9 +17,15 @@
 
 
 //###################CONNECT_TASKS#######################
+struct args_connect{
+	char * ip;
+	int * sock_fd;
+};
+
 
 void
-connect_to_server (char * server_ip, void * new_socket) {
+connect_to_server (void* args) {
+	struct args_connect connect_args = args;
 	int sockfd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
@@ -29,7 +35,7 @@ connect_to_server (char * server_ip, void * new_socket) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if((errno = getaddrinfo(server_ip, PORT, &hints, &servlist)) != 0) {
+	if((errno = getaddrinfo(connect_args->ip, PORT, &hints, &servlist)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errno));
 		return ;
 	}
@@ -56,7 +62,7 @@ connect_to_server (char * server_ip, void * new_socket) {
 		return ;
 	}
 
-	new_socket = &sockfd;
+	connect_args->sock_fd = &sockfd;
 
 }
 
@@ -70,8 +76,10 @@ disconnect_from_server (void * socket) {
 //######################SEND_TASKS###############################
 
 struct args_send{
-	int sock_fd;
+	int * sock_fd;
 	void * buf;
+	struct threadpool * send_pool;
+	struct threadpool * connect_pool;
 
 };
 
@@ -96,14 +104,34 @@ send_all_data (char *buf, int *length, int * socket) {
 
 void
 send_to_server (void * args) {
-	struct args_send * _args = args;
+	struct args_send * send_args = args;
+	int length = strlen(send_args->buf);
 
-	int length = strlen(_args->buf);
-
-	if (send_all_data(_args->buf, &length, &_args->sock_fd) == -1) {
+	if (send_all_data(send_args->buf, &length, send_args->sock_fd) == -1) {
 		errno = EPERM;
 		printf("Only send %d bytes\n", length);
-		close(_args->sock_fd);
+
+		//send failed so we try to connect and send again
+		struct task task_to_connect;
+		struct args_connect * connect_args;
+		struct sockaddr* addr;
+		socklen_t* addr_length;
+		char ip_addr[INET_ADDRSTRLEN];
+		getpeername(*(send_args->sock_fd), addr, addr_length);
+		connect_args->ip = inet_ntop(AF_INET, &(((struct sockaddr_in)addr)->sin_addr), ip_addr, INET_ADDRSTRLEN);
+		connect_args->sock_fd = send_args->sock_fd;
+		task_to_connect.arg = connect_args;
+		task_to_connect.routine_for_task = connect_to_server;
+
+
+		//task_to_send.arg = _args->;
+		struct task task_to_send;
+		task_to_send.routine_for_task = send_to_server;
+		task_to_send.arg = send_args;
+
+		thpool_add_task(send_args->connect_pool, task_to_connect, 1);
+		thpool_add_task(send_args->send_pool, task_to_send, 1);
+		close(send_args->sock_fd);
 		perror("send_to_server: ");
 		return ;
 	

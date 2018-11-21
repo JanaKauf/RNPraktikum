@@ -88,7 +88,7 @@ thpool_routine(void * threadpool) {
 
         job = taskqueue_receive(pool->taskqueue);
 
-        (*(job.routineForTask))(job.arg);
+        (*(job.routine_for_task))(job.arg);
 
     }
 
