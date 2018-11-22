@@ -142,7 +142,7 @@ send_to_server (void * args) {
 
 
 void
-send_sign_in (void * buffer) {
+send_sign_in (void * args) {
 //	struct args_send{
 //		int * sock_fd;
 //		void * buf;
@@ -150,7 +150,7 @@ send_sign_in (void * buffer) {
 //		struct threadpool * connect_pool;
 	int i;
 	int j;
-	struct args_send send_args;
+	struct args_send send_args = args;
 	struct member * p = list;
 	int num_of_members = number_of_members();
 	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES);
@@ -185,6 +185,8 @@ send_sign_in (void * buffer) {
 		}
 		p = p->next;
 	}
+	send_args.buf = sign_in_buf;
+	send_to_server(&send_args);
 
 }
 
@@ -211,22 +213,7 @@ send_quit (void * buffer) {
 
 
 
-	int member_offset;
-	int id_offset;
-	//set content of member list
-	for(i = 0; i < num_of_members; i++) {
-		member_offset = (i * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES;
-		sign_in_buf[0 + member_offset] = (p->ip & 0xFF000000) >> 24;
-		sign_in_buf[1 + member_offset] = (p->ip & 0x00FF0000) >> 16;
-		sign_in_buf[2 + member_offset] = (p->ip & 0x0000FF00) >> 8;
-		sign_in_buf[3 + member_offset] = (p->ip & 0x000000FF);
 
-		id_offset = 4 + member_offset;
-		for(j = 0; j < ID_LENGTH; j++) {
-			sign_in_buf[id_offset + j] = p->id[j];
-		}
-		p = p->next;
-	}
 }
 
 void
