@@ -9,12 +9,17 @@
 
 #define VERSION 1
 //###################CONNECT_TASKS#######################
+struct args_connect{
+	char * ip;
+	int * sock_fd;
+};
 
-void connect_to_server (void*);
-void disconnect_from_server (void * socket);
+extern void connect_to_server (void*);
+extern void disconnect_from_server (void * socket);
 
 //###################SEND_TASKS#######################
 
+extern void send_sign_in (void * buffer);
 
 //###################RECV_TASKS#######################
 

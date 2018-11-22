@@ -12,20 +12,17 @@
 #include <sys/wait.h>
 #include <stdint.h>
 #include "list.h"
+#include "list_thrsafe.h"
 #include "task.h"
+#include "taskqueue.h"
+
 #define PORT "6100"
 
 
 //###################CONNECT_TASKS#######################
-struct args_connect{
-	char * ip;
-	int * sock_fd;
-};
-
-
 void
 connect_to_server (void* args) {
-	struct args_connect connect_args = args;
+	struct args_connect * connect_args = (struct args_connect *)args;
 	int sockfd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
@@ -118,7 +115,7 @@ send_to_server (void * args) {
 		socklen_t* addr_length;
 		char ip_addr[INET_ADDRSTRLEN];
 		getpeername(*(send_args->sock_fd), addr, addr_length);
-		connect_args->ip = inet_ntop(AF_INET, &(((struct sockaddr_in)addr)->sin_addr), ip_addr, INET_ADDRSTRLEN);
+		connect_args->ip = inet_ntop(AF_INET, &(((struct sockaddr_in *)addr)->sin_addr), ip_addr, INET_ADDRSTRLEN);
 		connect_args->sock_fd = send_args->sock_fd;
 		task_to_connect.arg = connect_args;
 		task_to_connect.routine_for_task = connect_to_server;
@@ -146,6 +143,7 @@ send_sign_in (void * buffer) {
 //	struct args_send{
 //		int * sock_fd;
 //		void * buf;
+#include "list.h"
 //		struct threadpool * send_pool;
 //		struct threadpool * connect_pool;
 	int i;
@@ -245,31 +243,27 @@ send_error(void *buffer) {
 
 //######################RECV_TASKS###############################
 int
-recv_sign_in (char * id, const uint32_t ip, const uint16_t port) {
-	if (new_member(id, ip, port) != 0) {
-		return -1;
-	}
+recv_sign_in (char * id, const uint32_t ip) {
 
 	printf("sign in: %s\n", id);	
 }
 
 int
 recv_quit (char * id) {
-	if (delete_member(id) == 0) {
-		return 0;
+	if (thrsafe_delete_member_id(id) != 0) {
+		return -1;
 	}
-	return 1;
+
+	return 0;
 }
 
 int
 recv_msg (char * msg, const uint32_t ip) {
-	struct member * messeger;
+	struct member messeger;
 
-	if ((messeger = search_member_ip(ip)) == NULL) {
-		return -1;
-	}
-
-	printf("@%s: ", messeger->id);
+	messeger = search_member_ip(ip);
+	
+	printf("@%s: ", messeger.id);
 
 	for (char * i = msg; *i != '\0'; i = i++) {
 		printf("%c", *i);
@@ -282,15 +276,20 @@ recv_msg (char * msg, const uint32_t ip) {
 void
 recv_member_list (char * buffer, uint16_t length) {
 	uint32_t ip;
-	uint16_t port;
 	char id[16];
+
+	int * socket;
 
 	int counter = 0;
 
 	for (int i = 0; i < length; i++) {
 		ip = (uint32_t) buffer[0+counter] << 24 | buffer[1+counter] << 16 | buffer[2+counter] << 8 | buffer[3+counter];
-		port = (uint16_t) buffer[4+counter] << 8 | buffer[5+counter];
-		id = 
+		id = &buffer[4+counter];	
+
+		if (thrsafe_new_member(id, ip, socket) != 0) {
+			printf("task: recv_member_list fail to add id %s\n", id);
+		
+		}
 		counter += 22;
 	}
 
@@ -298,11 +297,10 @@ recv_member_list (char * buffer, uint16_t length) {
 
 int
 recv_error(char * error, const uint32_t ip) {
-	struct member * messeger;
+	struct member messeger;
 
-	if ((messeger = search_member_ip(ip)) != NULL) {
-		printf("@%s: ", messeger->id);
-	}
+	messeger = search_member_ip(ip);
+	printf("@%s: ", messeger.id);
 
 	printf("error: %s\n", error);
 
@@ -345,7 +343,7 @@ recv_from_client (void * socket) {
 				
 		switch (type) {
 			case 1:
-				recv_sign_in(payload, client_ip.sin_addr.s_addr, 6100);
+				recv_sign_in(payload, client_ip.sin_addr.s_addr);
 				break;
 			case 2:
 				recv_quit(payload);

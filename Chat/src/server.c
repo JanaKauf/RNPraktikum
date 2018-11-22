@@ -111,6 +111,8 @@ server_thread (void * args) {
 
 	printf("## server_thread started\n");
 
+	pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcancelstate(PTHREAD_CANCEL_DEFERRED, NULL);
 	for(;;) {
 		
         addr_len = sizeof client_addr;
@@ -122,8 +124,10 @@ server_thread (void * args) {
 		}
 
         printf("server_thread: new connection from %s on socket %d\n",
-				inet_ntop(client_addr.ss_family, &(((struct sockaddr_in*)&client_addr)->sin_addr),
-				client_ip, INET_ADDRSTRLEN), new_fd);
+				inet_ntop(client_addr.ss_family,
+						&(((struct sockaddr_in*)&client_addr)->sin_addr), client_ip,
+						INET_ADDRSTRLEN),
+						new_fd);
 
 		job.routine_for_task = recv_from_client;
 		job.arg = &new_fd;
