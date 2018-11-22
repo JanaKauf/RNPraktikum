@@ -152,7 +152,7 @@ delete_member (const char id[16]) {
 	
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
-		return errno;
+		return -1;
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
@@ -163,7 +163,7 @@ delete_member (const char id[16]) {
 
 	if (del_member == NULL) {
 		errno = EADDRNOTAVAIL;
-		return errno;
+		return -1;
 	}
 
 	p->next = del_member->next;

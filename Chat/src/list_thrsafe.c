@@ -8,10 +8,14 @@ pthread_mutex_t mutex;
 int
 init_thrsafe (void) {
 
-	init_list("Raupe\0");
+	if (errno = init_list("Raupe\0") != 0){
+		perror("init_thrsafe: init_list");		
+		return -1;
+	}
 
 	if (pthread_mutex_init(&mutex, NULL) != 0) {
-		return errno;
+		perror("init_thrsafe: mutex_init");
+		return -1;
 	}
 
 	return 0;

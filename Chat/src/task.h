@@ -9,6 +9,10 @@
 
 #define VERSION 1
 //###################CONNECT_TASKS#######################
+struct args_connect{
+	char * ip;
+	int * sock_fd;
+};
 
 extern void connect_to_server (void*);
 extern void disconnect_from_server (void * socket);
