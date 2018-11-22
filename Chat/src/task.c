@@ -10,9 +10,9 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
-
+#include <stdint.h>
 #include "list.h"
-
+#include "task.h"
 #define PORT "6100"
 
 
@@ -61,7 +61,7 @@ connect_to_server (void* args) {
 		perror("connect: ");
 		return ;
 	}
-
+	//TODO put sockfd in member list
 	connect_args->sock_fd = &sockfd;
 
 }
@@ -122,6 +122,7 @@ send_to_server (void * args) {
 		connect_args->sock_fd = send_args->sock_fd;
 		task_to_connect.arg = connect_args;
 		task_to_connect.routine_for_task = connect_to_server;
+		thpool_add_task(send_args->connect_pool, task_to_connect, 1);
 
 
 		//task_to_send.arg = _args->;
@@ -129,7 +130,6 @@ send_to_server (void * args) {
 		task_to_send.routine_for_task = send_to_server;
 		task_to_send.arg = send_args;
 
-		thpool_add_task(send_args->connect_pool, task_to_connect, 1);
 		thpool_add_task(send_args->send_pool, task_to_send, 1);
 		close(send_args->sock_fd);
 		perror("send_to_server: ");
@@ -143,6 +143,39 @@ send_to_server (void * args) {
 
 void
 send_sign_in (void * buffer) {
+//	struct args_send{
+//		int * sock_fd;
+//		void * buf;
+//		struct threadpool * send_pool;
+//		struct threadpool * connect_pool;
+	int i;
+	int j;
+	struct args_send send_args;
+	struct member * p = list;
+	int num_of_members = number_of_members();
+	uint16_t bufsize = (num_of_members * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES;
+	char sign_in_buf[bufsize];
+	//header of member list
+	sign_in_buf[0] = VERSION; //version
+	sign_in_buf[1] = SIGN_IN; //type
+	sign_in_buf[2] = (bufsize & 0xFF00) >> 8; //length
+	sign_in_buf[3] = (bufsize & 0x00FF); //length
+
+
+
+	//set content of member list
+	for(i = 0; i < num_of_members; i++) {
+		for(i = 0; i < ID_LENGTH; i++) {
+			sign_in_buf[i] = p->id[i];
+		}
+		sign_in_buf[ID_LENGTH] 	   = (p->ip & 0xFF000000) >> 24;
+		sign_in_buf[ID_LENGTH + 1] = (p->ip & 0x00FF0000) >> 16;
+		sign_in_buf[ID_LENGTH + 2] = (p->ip & 0x0000FF00) >> 8;
+		sign_in_buf[ID_LENGTH + 3] = (p->ip & 0x000000FF);
+
+
+	}
+
 }
 
 void

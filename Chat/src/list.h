@@ -2,11 +2,16 @@
 #define _LIST_H
 #include <stdint.h>
 #include <time.h>
+#define SIZE_OF_HEADER_IN_BYTES 8
+#define SIZE_OF_MEMBER_IN_BYTES ((sizeof char) * 16) + sizeof(uint32)
+#define ID_LENGTH 16; //length of id without \0
+
+
 
 typedef struct member {
 	char 			id[16];
 	uint32_t		ip;
-	uint16_t		port;
+
 	struct member*	next;
 } member_t;
 

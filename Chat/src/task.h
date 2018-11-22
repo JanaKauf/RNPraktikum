@@ -1,7 +1,13 @@
 #ifndef _TASK_H
 #define _TASK_H
 
+#define SIGN_IN 1
+#define SIGN_OUT 2
+#define MEMBER_LIST 3
+#define MESSAGE 4
+#define ERROR 5
 
+#define VERSION 1
 //###################CONNECT_TASKS#######################
 
 void connect_to_server (void*);
