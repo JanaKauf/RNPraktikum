@@ -32,7 +32,6 @@ init_list (const char id[16]) {
 	}
 
 	memcpy(list->id, id, strlen(id)+1);
-	list->port = 6100;
 	list->next = NULL;
 	counter++;
 
@@ -58,8 +57,7 @@ list_set_first_ip(void) {
 }
 
 int
-new_member (const char id[16], const uint32_t ip,
-				const uint16_t port, int * socket) {
+new_member (const char id[16], const uint32_t ip, int * socket) {
 	member_t * new_member = NULL;
 	member_t * p;
 
@@ -88,7 +86,6 @@ new_member (const char id[16], const uint32_t ip,
 	} 
 	memcpy(list->id, id, strlen(id)+1);
 	new_member->ip = ip;
-	new_member->port = port;
 	new_member->sock_fd = socket;
 	new_member->next = NULL;
 
@@ -209,7 +206,6 @@ print_members (void) {
 	for (p = list; p->next != NULL; p = p->next){
 		printf("id________%s_\n", p->id);
 		printf("ip________%d_\n", p->ip);
-		printf("port______%d_\n", p->port);
 		printf("socket____%d_\n", *p->sock_fd);
 		printf("\n");
 	}

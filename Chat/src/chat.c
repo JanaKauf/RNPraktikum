@@ -20,7 +20,6 @@ mqd_t task_connection;
 
 struct threadpool * recv_pool;
 struct threadpool * send_pool;
-struct threadpool * connection_pool;
 
 void
 help_function (void) {
@@ -60,6 +59,7 @@ cmd_routine (void *args ) {
 				c_args.ip = strtok(NULL, "\n");
 				job.routine_for_task = connect_to_server;
 				job.arg = &c_args;
+				thpool_add_task(send_pool, job, 1);
 
 				job.routine_for_task = send_sign_in;
 				job.arg = c_args.sock_fd;
@@ -116,21 +116,11 @@ main (int argc, char *argv[]) {
 		goto recvfree;
 	}
 
-	printf("-- Creating thpool - CONNECTION...\n");
-
-	if ((connection_pool = thpool_create(task_connection)) == NULL) {
-		printf("main: connection_pool = create - fail");
-		goto sendfree;
-	}
-
 	pthread_create(&serv_thread, NULL, server_thread, recv_pool);
 	pthread_create(&cmd_control, NULL, cmd_routine, NULL);
 
 	pthread_join(cmd_control, NULL);
 
-	connfree:
-		thpool_destroy(connection_pool);
-		thpool_free(connection_pool);
 	sendfree:	
 		thpool_destroy(send_pool);
 		thpool_free(send_pool);

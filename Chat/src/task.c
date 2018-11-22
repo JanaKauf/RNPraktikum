@@ -15,6 +15,7 @@
 #include "list_thrsafe.h"
 #include "task.h"
 #include "taskqueue.h"
+
 #define PORT "6100"
 
 
@@ -195,10 +196,7 @@ send_error(void *buffer) {
 
 //######################RECV_TASKS###############################
 int
-recv_sign_in (char * id, const uint32_t ip, const uint16_t port) {
-	if (new_member(id, ip, port) != 0) {
-		return -1;
-	}
+recv_sign_in (char * id, const uint32_t ip) {
 
 	printf("sign in: %s\n", id);	
 }
@@ -231,15 +229,20 @@ recv_msg (char * msg, const uint32_t ip) {
 void
 recv_member_list (char * buffer, uint16_t length) {
 	uint32_t ip;
-	uint16_t port;
 	char id[16];
+
+	int * socket;
 
 	int counter = 0;
 
 	for (int i = 0; i < length; i++) {
 		ip = (uint32_t) buffer[0+counter] << 24 | buffer[1+counter] << 16 | buffer[2+counter] << 8 | buffer[3+counter];
-		port = (uint16_t) buffer[4+counter] << 8 | buffer[5+counter];
-		id = 
+		id = &buffer[4+counter];	
+
+		if (thrsafe_new_member(id, ip, socket) != 0) {
+			printf("task: recv_member_list fail to add id %s\n", id);
+		
+		}
 		counter += 22;
 	}
 
@@ -293,7 +296,7 @@ recv_from_client (void * socket) {
 				
 		switch (type) {
 			case 1:
-				recv_sign_in(payload, client_ip.sin_addr.s_addr, 6100);
+				recv_sign_in(payload, client_ip.sin_addr.s_addr);
 				break;
 			case 2:
 				recv_quit(payload);

@@ -22,13 +22,12 @@ init_thrsafe (void) {
 }
 
 int
-thrsafe_new_member(const char id[16], const uint32_t ip,
-				const uint16_t port, int * socket) {
+thrsafe_new_member(const char id[16], const uint32_t ip, int * socket) {
 	int err = 0;
 
 	pthread_mutex_lock(&mutex);
 
-	err = new_member(id, ip, port, socket);
+	err = new_member(id, ip, socket);
 
 	pthread_mutex_unlock(&mutex);
 

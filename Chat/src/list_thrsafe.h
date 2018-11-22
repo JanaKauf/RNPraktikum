@@ -7,7 +7,6 @@ extern int init_thrsafe(void);
 
 extern int thrsafe_new_member(const char id[16],
 							const uint32_t ip,
-							const uint16_t port,
 							int * socket);
 
 extern int thrsafe_delete_member_id (const char id[16]);
