@@ -46,7 +46,7 @@ cmd_routine (void *args ) {
 
 		if (msg[0] == '@') {
 			job.routine_for_task = send_msg;
-			thpool_add_task(pool, job, 1);
+			thpool_add_task(send_pool, job, 1);
 		
 		} else {
 
@@ -54,13 +54,14 @@ cmd_routine (void *args ) {
 
 			if (strcmp(cmd, "/connect") == 0) {
 				job.routine_for_task = connect_to_server;
-				thpool_add_task(pool, job, 1);
+				thpool_add_task(connection_pool, job, 1);
 		
 			} else if (strcmp(cmd, "/quit") == 0) {
 				job.routine_for_task = send_quit;
 				thpool_add_task(pool, job, 1);
 		
 			} else if (strcmp(cmd, "/info") == 0){
+				print_members();
 			
 			} else if (strcmp(cmd, "/help") == 0){
 				help_function();	

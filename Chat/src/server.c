@@ -19,10 +19,9 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
 #include "thpool.h"
 #include "task.h"
+#include "list_thrsafe.h"
 #include "list.h"
 
 
@@ -34,9 +33,6 @@ int yes = 1;
 int
 server_init(void) {
 	struct addrinfo *servlist, *p;
-
-	struct ifreq ifr;
-	strcpy(ifr.ifr_name, "wlp3s0");
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -75,13 +71,13 @@ server_init(void) {
 		return errno;
 	}
 
-	if (ioctl(sockfd, SIOCGIFADDR, &ifr) != 0) {
-		perror("ioctl: ");
+
+	if (thrsafe_set_socket_id("Raupe\0", &sockfd) != 0) {
 		return -1;
 	}
 
-	if (init_list("Raupe\0", ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr, 6100) == 0) {
-		return 1;
+	if (list_set_first_ip() != 0) {
+		return -1;
 	}
 
 	if(listen(sockfd, HOLD_QUEUE) == -1) {

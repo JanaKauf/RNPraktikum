@@ -2,14 +2,23 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include "list.h"
 
 member_t * list = NULL;
 int counter = 0;
 
 int
-init_list (const char id[16], const uint32_t ip,
-				const uint16_t port) {
+init_list (const char id[16]) {
+
 	if (list != NULL) {
 		errno = EADDRINUSE;
 		return errno;
@@ -23,8 +32,7 @@ init_list (const char id[16], const uint32_t ip,
 	}
 
 	memcpy(list->id, id, strlen(id)+1);
-	list->ip = ip;
-	list->port = port;
+	list->port = 6100;
 	list->next = NULL;
 	counter++;
 
@@ -32,17 +40,42 @@ init_list (const char id[16], const uint32_t ip,
 }
 
 int
+list_set_first_ip(void) {
+	struct ifreq ifr;
+	strcpy(ifr.ifr_name, "wlp3s0");
+	
+	if (ioctl(*list->sock_fd, SIOCGIFADDR, &ifr) != 0) {
+		perror("ioctl: ");
+		return -1;
+	}
+
+	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
+
+	list->ip =  my_ip->sin_addr.s_addr;
+
+	return 0;
+
+}
+
+int
 new_member (const char id[16], const uint32_t ip,
-				const uint16_t port) {
-	struct member * new_member = NULL;
-	struct member * p = NULL;
+				const uint16_t port, int * socket) {
+	member_t * new_member = NULL;
+	member_t * p;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
 		return errno;
 	}
 
-	if ((p = search_member(id)) != NULL) {
+
+	for (p = list; p->next != NULL; p = p->next){
+		if ((strcmp(id, p->id)) == 0) {
+			break;
+		}
+	}
+
+	if (p != NULL) {
 		errno = EPERM;
 		return errno;
 	}
@@ -56,6 +89,7 @@ new_member (const char id[16], const uint32_t ip,
 	memcpy(list->id, id, strlen(id)+1);
 	new_member->ip = ip;
 	new_member->port = port;
+	new_member->sock_fd = socket;
 	new_member->next = NULL;
 
 	for (p = list; p != NULL; p = p->next);
@@ -67,53 +101,65 @@ new_member (const char id[16], const uint32_t ip,
 	
 }
 
-struct member *
+struct member
 search_member_id (const char id[16]) {
 	struct member * p = NULL;
+	member_t search;
+
+	memset(&search, 0, sizeof(member_t));	
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
-		return NULL;
+		return search;
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
 		if ((strcmp(id, p->id)) == 0) {
-			return p;
+			search = *p;
+			return search;
 		}
 	}
 
-	return NULL;
+	return search;
 }
 
-struct member *
+struct member
 search_member_ip (const uint32_t ip) {
 	struct member * p = NULL;
+	member_t search;
+
+	memset(&search, 0, sizeof(member_t));	
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
-		return NULL;
+		return search;
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
 		if (p->ip == ip) {
-			return p;
+			search = *p;
+			return search;
 		}
 	}
 
-	return NULL;
+	return search;
 }
 
 int
 delete_member (const char id[16]) {
-	struct member * del_member = NULL;
-	struct member * p = NULL;
+	member_t * del_member = NULL;
+	member_t * p = NULL;
 	
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
 		return errno;
 	}
 
-	del_member = search_member(id);
+	for (p = list; p->next != NULL; p = p->next){
+		if (p->id == id) {
+			del_member = p;
+		}
+	}
 
 	if (del_member == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -130,8 +176,8 @@ delete_member (const char id[16]) {
 
 int
 delete_list (void) {
-	struct member * p = NULL;
-	struct member * previous = NULL;
+	member_t * p = NULL;
+	member_t * previous = NULL;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -147,6 +193,73 @@ delete_list (void) {
 	counter = 0;
 
 	return 0;
+}
+
+void
+print_members (void) {
+	member_t * p = NULL;
+
+	if (list == NULL) {
+		errno = EADDRNOTAVAIL;
+		return ;
+	}
+
+	printf("_____________MEMBER_LIST____________\n\n");
+
+	for (p = list; p->next != NULL; p = p->next){
+		printf("id________%s_\n", p->id);
+		printf("ip________%d_\n", p->ip);
+		printf("port______%d_\n", p->port);
+		printf("socket____%d_\n", *p->sock_fd);
+		printf("\n");
+	}
+
+}
+
+int *
+get_socket_by_ip (const uint32_t ip) {
+	member_t * p = NULL;
+
+	if (list == NULL) {
+		errno = EADDRNOTAVAIL;
+		return NULL;
+	}
+
+	for (p = list; p->next != NULL; p = p->next){
+		if (p->ip == ip) {
+			break;
+		}
+	}
+
+	if (p != NULL) {
+		return p->sock_fd;
+	}
+
+	return NULL;
+	
+}
+
+int *
+get_socket_by_id (const char id[16]) {
+	member_t * p = NULL;
+
+	if (list == NULL) {
+		errno = EADDRNOTAVAIL;
+		return NULL;
+	}
+
+	for (p = list; p->next != NULL; p = p->next){
+		if (p->id == id) {
+			break;
+		}
+	}
+
+	if (p != NULL) {
+		return p->sock_fd;
+	}
+
+	return NULL;
+	
 }
 
 int
