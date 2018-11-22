@@ -13,7 +13,7 @@
 #include <signal.h>
 #include "list.h"
 
-member_t * list = NULL;
+member_t *list = NULL;
 int counter = 0;
 
 int
@@ -21,14 +21,14 @@ init_list (const char id[16]) {
 
 	if (list != NULL) {
 		errno = EADDRINUSE;
-		return errno;
+		return -1;
 	}
 
 	list = malloc(sizeof(member_t));
 
 	if (list == NULL) {
 		errno = ENOMEM;
-		return errno;
+		return -1;
 	}
 
 	memcpy(list->id, id, strlen(id)+1);
@@ -41,7 +41,7 @@ init_list (const char id[16]) {
 int
 list_set_first_ip(void) {
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, "wlp3s0");
+	strcpy(ifr.ifr_name, INTERFACE_NAME);
 	
 	if (ioctl(*list->sock_fd, SIOCGIFADDR, &ifr) != 0) {
 		perror("ioctl: ");
@@ -57,9 +57,9 @@ list_set_first_ip(void) {
 }
 
 int
-new_member (const char id[16], const uint32_t ip, int * socket) {
-	member_t * new_member = NULL;
-	member_t * p;
+new_member (const char id[16], const uint32_t ip, int *socket) {
+	member_t *new_member = NULL;
+	member_t *p;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -100,7 +100,7 @@ new_member (const char id[16], const uint32_t ip, int * socket) {
 
 struct member
 search_member_id (const char id[16]) {
-	struct member * p = NULL;
+	struct member *p = NULL;
 	member_t search;
 
 	memset(&search, 0, sizeof(member_t));	
@@ -122,7 +122,7 @@ search_member_id (const char id[16]) {
 
 struct member
 search_member_ip (const uint32_t ip) {
-	struct member * p = NULL;
+	struct member *p = NULL;
 	member_t search;
 
 	memset(&search, 0, sizeof(member_t));	
@@ -144,8 +144,8 @@ search_member_ip (const uint32_t ip) {
 
 int
 delete_member (const char id[16]) {
-	member_t * del_member = NULL;
-	member_t * p = NULL;
+	member_t *del_member = NULL;
+	member_t *p = NULL;
 	
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -173,8 +173,8 @@ delete_member (const char id[16]) {
 
 int
 delete_list (void) {
-	member_t * p = NULL;
-	member_t * previous = NULL;
+	member_t *p = NULL;
+	member_t *previous = NULL;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -194,7 +194,7 @@ delete_list (void) {
 
 void
 print_members (void) {
-	member_t * p = NULL;
+	member_t *p = NULL;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -214,7 +214,7 @@ print_members (void) {
 
 int *
 get_socket_by_ip (const uint32_t ip) {
-	member_t * p = NULL;
+	member_t *p = NULL;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -237,7 +237,7 @@ get_socket_by_ip (const uint32_t ip) {
 
 int *
 get_socket_by_id (const char id[16]) {
-	member_t * p = NULL;
+	member_t *p = NULL;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;

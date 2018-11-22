@@ -18,6 +18,13 @@ extern void connect_to_server (void*);
 extern void disconnect_from_server (void * socket);
 
 //###################SEND_TASKS#######################
+struct args_send{
+	int * sock_fd;
+	void * buf;
+	struct threadpool * send_pool;
+	struct threadpool * connect_pool;
+
+};
 
 extern void send_sign_in (void * buffer);
 

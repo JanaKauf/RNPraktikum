@@ -18,8 +18,8 @@ mqd_t task_recv;
 mqd_t task_send;
 mqd_t task_connection;
 
-struct threadpool * recv_pool;
-struct threadpool * send_pool;
+struct threadpool *recv_pool;
+struct threadpool *send_pool;
 
 void
 help_function (void) {

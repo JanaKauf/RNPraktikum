@@ -21,8 +21,8 @@
 
 //###################CONNECT_TASKS#######################
 void
-connect_to_server (void* args) {
-	struct args_connect * connect_args = (struct args_connect *)args;
+connect_to_server (void *args) {
+	struct args_connect *connect_args = (struct args_connect *)args;
 	int sockfd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
@@ -72,13 +72,6 @@ disconnect_from_server (void * socket) {
 
 //######################SEND_TASKS###############################
 
-struct args_send{
-	int * sock_fd;
-	void * buf;
-	struct threadpool * send_pool;
-	struct threadpool * connect_pool;
-
-};
 
 int
 send_all_data (char *buf, int *length, int * socket) {
@@ -243,13 +236,49 @@ send_error(void *buffer) {
 
 //######################RECV_TASKS###############################
 int
-recv_sign_in (char * id, const uint32_t ip) {
+recv_sign_in (unsigned char * buffer,
+		const uint32_t ip_addr, int length) {
 
-	printf("sign in: %s\n", id);	
+	uint32_t ip;
+	char *id;
+
+	int *socket;
+
+	struct args_connect c_args;
+	struct in_addr i_ip;
+
+	int counter = 0;
+
+	for (int i = 0; i < length; i++) {
+		ip = (uint32_t) buffer[0+counter] << 24
+					| buffer[1+counter] << 16
+					| buffer[2+counter] << 8
+					| buffer[3+counter];
+
+		id = &buffer[4+counter];	
+		
+		i_ip.s_addr = ip;
+		c_args.ip = inet_ntoa(i_ip);
+		c_args.sock_fd = socket;
+
+		connect_to_server(&c_args);
+
+		if (thrsafe_new_member(id, ip, socket) != 0) {
+			printf("task: recv_member_list fail to add id %s\n", id);
+		
+		}
+
+		if (i == 0) {
+			printf("sign in: %s\n", id);	
+		}
+
+		counter += SIZE_OF_MEMBER_IN_BYTES;
+	}
+
 }
 
 int
-recv_quit (char * id) {
+recv_quit (unsigned char *id) {
 	if (thrsafe_delete_member_id(id) != 0) {
 		return -1;
 	}
@@ -258,7 +287,7 @@ recv_quit (char * id) {
 }
 
 int
-recv_msg (char * msg, const uint32_t ip) {
+recv_msg (unsigned char *msg, const uint32_t ip) {
 	struct member messeger;
 
 	messeger = search_member_ip(ip);
@@ -273,30 +302,43 @@ recv_msg (char * msg, const uint32_t ip) {
 	return 0;
 }
 
-void
-recv_member_list (char * buffer, uint16_t length) {
+int
+recv_member_list (unsigned char *buffer, uint16_t length) {
 	uint32_t ip;
-	char id[16];
+	char *id;
 
 	int * socket;
+
+	struct args_connect c_args;
+	struct in_addr i_ip;
 
 	int counter = 0;
 
 	for (int i = 0; i < length; i++) {
-		ip = (uint32_t) buffer[0+counter] << 24 | buffer[1+counter] << 16 | buffer[2+counter] << 8 | buffer[3+counter];
+		ip = (uint32_t) buffer[0+counter] << 24
+					| buffer[1+counter] << 16
+					| buffer[2+counter] << 8
+					| buffer[3+counter];
+
 		id = &buffer[4+counter];	
+
+		i_ip.s_addr = ip;
+		c_args.ip = inet_ntoa(i_ip);
+		c_args.sock_fd = socket;
+
+		connect_to_server(&c_args);
 
 		if (thrsafe_new_member(id, ip, socket) != 0) {
 			printf("task: recv_member_list fail to add id %s\n", id);
 		
 		}
-		counter += 22;
+		counter += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
 }
 
 int
-recv_error(char * error, const uint32_t ip) {
+recv_error(unsigned char *error, const uint32_t ip) {
 	struct member messeger;
 
 	messeger = search_member_ip(ip);
@@ -308,16 +350,16 @@ recv_error(char * error, const uint32_t ip) {
 }
 
 void
-recv_from_client (void * socket) {
+recv_from_client (void *socket) {
 	uint8_t type;	
 	uint16_t length;
 	uint32_t crc;
-	char * payload;
+	unsigned char *payload;
 
 	int num_bytes;
 
-	char * buf;
-	int * new_fd = socket;
+	unsigned char * buf;
+	int *new_fd = socket;
 
 	struct sockaddr_in client_ip;
 	socklen_t addr_size = sizeof(client_ip);
@@ -334,28 +376,38 @@ recv_from_client (void * socket) {
 	} else {
 
 		type = buf[1];
-		length = (uint16_t) buf[2] << 8 | buf[3];
-		crc = (uint32_t) buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
+
+		length = (uint16_t) buf[2] << 8
+							| buf[3];
+
+		crc = (uint32_t) buf[4] << 24
+						| buf[5] << 16
+						| buf[6] << 8
+						| buf[7];
 
 		payload = &buf[8];
 		
-		getpeername(*new_fd, (struct sockaddr *)&client_ip, &addr_size);
+		getpeername(*new_fd,
+				(struct sockaddr *)&client_ip,
+				&addr_size);
 				
 		switch (type) {
-			case 1:
-				recv_sign_in(payload, client_ip.sin_addr.s_addr);
+			case SIGN_IN:
+				recv_sign_in(payload,
+						client_ip.sin_addr.s_addr,
+						length);
 				break;
-			case 2:
-				recv_quit(payload);
+			case SIGN_OUT:
 				close(*new_fd);
+				recv_quit(payload);
 				break;
-			case 3:
+			case MEMBER_LIST:
 				recv_member_list(payload, length);
 				break;
-			case 4:
+			case MESSAGE:
 				recv_msg(payload, client_ip.sin_addr.s_addr);
 				break;
-			case 5:
+			case ERROR:
 				recv_error(payload, client_ip.sin_addr.s_addr);
 				break;
 			default:

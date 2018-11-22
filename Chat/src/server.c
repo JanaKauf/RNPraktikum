@@ -92,7 +92,7 @@ server_init(void) {
 }
 
 void *
-server_thread (void * args) {
+server_thread (void *args) {
 	int new_fd;
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len;
@@ -100,7 +100,7 @@ server_thread (void * args) {
 	int num_bytes;
 	char buf[1024];
 
-	struct threadpool * pool = args;
+	struct threadpool *pool = args;
 	struct task job;
 
 	uint8_t type;
