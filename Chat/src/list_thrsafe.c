@@ -13,33 +13,37 @@ init_thrsafe (void) {
 	if (pthread_mutex_init(&mutex, NULL) != 0) {
 		return errno;
 	}
+
+	return 0;
 }
 
 int
 thrsafe_new_member(const char id[16], const uint32_t ip,
 				const uint16_t port, int * socket) {
+	int err = 0;
 
 	pthread_mutex_lock(&mutex);
 
-	errno = new_member(id, ip, port, socket);
+	err = new_member(id, ip, port, socket);
 
 	pthread_mutex_unlock(&mutex);
 
-	return errno;
+	return err;
 
 }
 
 int
 thrsafe_delete_member_id (const char id[16]) {
 	member_t * search = NULL;
+	int err = 0;
 
 	pthread_mutex_lock(&mutex);
 
-	errno = delete_member(id);
+	err = delete_member(id);
 
 	pthread_mutex_unlock(&mutex);
 
-	return errno;
+	return err;
 
 }
 
@@ -77,7 +81,11 @@ thrsafe_set_socket_ip (const uint32_t ip, int * socket) {
 
 int
 thrsafe_clean (void) {
-	delete_list();
+
+	if (delete_list()) {
+		perror("thrsafe_clean: ");
+		return -1;
+	}
 	pthread_mutex_destroy(&mutex);
 
 	return errno;

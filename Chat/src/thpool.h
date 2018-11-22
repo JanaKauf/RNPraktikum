@@ -3,8 +3,8 @@
 #include "taskqueue.h"
 #include <pthread.h>
 
-#define NUM_THREADS 10
-#define NUM_TASKS	10
+#define NUM_THREADS 15
+#define NUM_TASKS	15
 
 struct threadpool {
     pthread_mutex_t mutex;

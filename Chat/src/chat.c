@@ -53,12 +53,12 @@ cmd_routine (void *args ) {
 			cmd = strtok(msg, space);
 
 			if (strcmp(cmd, "/connect") == 0) {
-				job.routine_for_task = connect_to_server;
-				thpool_add_task(connection_pool, job, 1);
+				job.routine_for_task = send_sign_in;
+				thpool_add_task(send_pool, job, 1);
 		
 			} else if (strcmp(cmd, "/quit") == 0) {
 				job.routine_for_task = send_quit;
-				thpool_add_task(pool, job, 1);
+				thpool_add_task(send_pool, job, 1);
 		
 			} else if (strcmp(cmd, "/info") == 0){
 				print_members();
@@ -79,19 +79,19 @@ cmd_routine (void *args ) {
 int
 main (int argc, char *argv[]) {
 
-	task_recv = taskqueue_create("TASK_RECV", 20);
+	task_recv = taskqueue_create("TASK_RECV", 15);
 	if ((recv_pool = thpool_create(task_recv)) == NULL) {
 		taskqueue_destroy("TASK_QUEUE");
 		return 0;
 	}
 
-	task_send = taskqueue_create("TASK_SEND", 20);
+	task_send = taskqueue_create("TASK_SEND", 15);
 	if ((send_pool = thpool_create(task_send)) == NULL) {
 		taskqueue_destroy("TASK_QUEUE");
 		return 0;
 	}
 
-	task_connection = taskqueue_create("TASK_CONNECTION", 20);
+	task_connection = taskqueue_create("TASK_CONNECTION", 15);
 	if ((connection_pool = thpool_create(task_connection)) == NULL) {
 		taskqueue_destroy("TASK_QUEUE");
 		return 0;
@@ -100,7 +100,6 @@ main (int argc, char *argv[]) {
 	pthread_create(&serv_thread, NULL, server_thread, recv_pool);
 	pthread_create(&cmd_control, NULL, cmd_routine, NULL);
 
-	pthread_join(serv_thread, NULL);
 	pthread_join(cmd_control, NULL);
 	return 0;
 }
