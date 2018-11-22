@@ -10,9 +10,8 @@ init_thrsafe (void) {
 
 	init_list("Raupe\0");
 
-	if (pthread_mutex_init(&mutex, NULL) != 0) {
-		return errno;
-	}
+	pthread_mutex_init(&mutex, NULL);
+	return errno;
 }
 
 int
