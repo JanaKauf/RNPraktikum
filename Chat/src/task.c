@@ -169,21 +169,64 @@ send_sign_in (void * buffer) {
 
 
 
-
+	int member_offset;
+	int id_offset;
 	//set content of member list
 	for(i = 0; i < num_of_members; i++) {
-//		sign_in_buf[ID_LENGTH] 	   = (p->ip & 0xFF000000) >> 24;
-//		sign_in_buf[ID_LENGTH + 1] = (p->ip & 0x00FF0000) >> 16;
-//		sign_in_buf[ID_LENGTH + 2] = (p->ip & 0x0000FF00) >> 8;
-//		sign_in_buf[ID_LENGTH + 3] = (p->ip & 0x000000FF);
+		member_offset = (i * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES;
+		sign_in_buf[0 + member_offset] = (p->ip & 0xFF000000) >> 24;
+		sign_in_buf[1 + member_offset] = (p->ip & 0x00FF0000) >> 16;
+		sign_in_buf[2 + member_offset] = (p->ip & 0x0000FF00) >> 8;
+		sign_in_buf[3 + member_offset] = (p->ip & 0x000000FF);
 
-
+		id_offset = 4 + member_offset;
+		for(j = 0; j < ID_LENGTH; j++) {
+			sign_in_buf[id_offset + j] = p->id[j];
+		}
+		p = p->next;
 	}
 
 }
 
 void
 send_quit (void * buffer) {
+	int i;
+	int j;
+	struct args_send send_args;
+	struct member * p = list;
+	int num_of_members = number_of_members();
+	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES);
+	char sign_in_buf[bufsize];
+	//header of member list
+	sign_in_buf[0] = VERSION; //version
+	sign_in_buf[1] = SIGN_OUT; //type
+	sign_in_buf[2] = (bufsize & 0xFF00) >> 8; //length
+	sign_in_buf[3] = (bufsize & 0x00FF); //length
+	//TODO get CRC
+	//uint32_t crc
+	//sign_in_buf[4] = crc & 0xFF000000 >> 24;
+	//sign_in_buf[5] = crc & 0x00FF0000 >> 16;
+	//sign_in_buf[6] = crc & 0x0000FF00 >> 8;
+	//sign_in_buf[7] = crc & 0x000000FF;
+
+
+
+	int member_offset;
+	int id_offset;
+	//set content of member list
+	for(i = 0; i < num_of_members; i++) {
+		member_offset = (i * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES;
+		sign_in_buf[0 + member_offset] = (p->ip & 0xFF000000) >> 24;
+		sign_in_buf[1 + member_offset] = (p->ip & 0x00FF0000) >> 16;
+		sign_in_buf[2 + member_offset] = (p->ip & 0x0000FF00) >> 8;
+		sign_in_buf[3 + member_offset] = (p->ip & 0x000000FF);
+
+		id_offset = 4 + member_offset;
+		for(j = 0; j < ID_LENGTH; j++) {
+			sign_in_buf[id_offset + j] = p->id[j];
+		}
+		p = p->next;
+	}
 }
 
 void
