@@ -1,18 +1,12 @@
 #include <stdio.h>
-#include "list.h"
 #include <pthread.h>
 #include <errno.h>
+#include "list.h"
 
 pthread_mutex_t mutex;
 
 int
 Thrsafe_init (void) {
-
-	if (errno = List_init(ID_NAME) != 0){
-		perror("init_thrsafe: init_list");		
-		return -1;
-	}
-
 	if (pthread_mutex_init(&mutex, NULL) != 0) {
 		perror("init_thrsafe: mutex_init");
 		return -1;
@@ -21,7 +15,7 @@ Thrsafe_init (void) {
 }
 
 int
-Thrsafe_new_member(const char id[16], const uint32_t ip, int * sockfd) {
+Thrsafe_new_member(uint8_t id[16], uint32_t ip, int * sockfd) {
 	int err = 0;
 
 	pthread_mutex_lock(&mutex);
@@ -35,7 +29,7 @@ Thrsafe_new_member(const char id[16], const uint32_t ip, int * sockfd) {
 }
 
 int
-Thrsafe_delete_member_id (const char id[16]) {
+Thrsafe_delete_member_id (uint8_t id[16]) {
 	int err = 0;
 
 	pthread_mutex_lock(&mutex);
@@ -49,34 +43,30 @@ Thrsafe_delete_member_id (const char id[16]) {
 }
 
 int
-Thrsafe_set_sockfd_id (const char id[16], int *sockfd) {
+Thrsafe_set_sockfd_id (uint8_t id[16], int *sockfd) {
 	int *sock_fd = List_get_sockfd_by_id(id);
-
-	if (sock_fd == NULL) {
-		return -1;
-	}
 
 	pthread_mutex_lock(&mutex);
 
 	sock_fd = sockfd;
 
 	pthread_mutex_unlock(&mutex);
+
+	return 0;
 
 }
 
 int
-Thrsafe_set_sockfd_ip (const uint32_t ip, int *sockfd) {
+Thrsafe_set_sockfd_ip (uint32_t ip, int *sockfd) {
 	int *sock_fd = List_get_sockfd_by_ip(ip);
-
-	if (sock_fd == NULL) {
-		return -1;
-	}
 
 	pthread_mutex_lock(&mutex);
 
 	sock_fd = sockfd;
 
 	pthread_mutex_unlock(&mutex);
+
+	return 0;
 
 }
 
@@ -89,6 +79,6 @@ Thrsafe_clean (void) {
 	}
 	pthread_mutex_destroy(&mutex);
 
-	return errno;
+	return 0;
 
 }

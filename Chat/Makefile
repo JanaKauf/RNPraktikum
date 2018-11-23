@@ -2,8 +2,8 @@
 # Author: Janaina Kaufmann (ECS), Torben Kunow (IT)
 
 CC      = gcc
-CFLAGS  = -Wall -o2
-LDFLAGS = -g -pthread -lrt
+CFLAGS  = -Wall -o2 -ggdb -O0 -g3
+LDFLAGS = -pthread -lrt
 
 SRCDIR  = src
 OBJDIR  = obj
@@ -31,11 +31,11 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@echo -e "${RED}Ein Objekt fuer $< erstellt! ${NC}"
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
-# ifdef cond.c
-$(BINDIR)/chat: $(OBJDIR)/chat.o $(OBJDIR)/server.o $(OBJDIR)/taskqueue.o $(OBJDIR)/thpool.o $(OBJDIR)/task.o $(OBJDIR)/list.o $(OBJDIR)/list_thrsafe.o $(OBJDIR)/get_string.o
+
+$(BINDIR)/chat: $(OBJDIR)/chat.o $(OBJDIR)/server.o $(OBJDIR)/taskqueue.o $(OBJDIR)/thpool.o $(OBJDIR)/task.o $(OBJDIR)/list.o $(OBJDIR)/list_thrsafe.o
 	@echo -e "${RED}EXECUTABLE von $< ${NC}"
 	@mkdir -p $(@D)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 install:
 	@echo -e "${RED}Installation vorbereitet! ${NC}"

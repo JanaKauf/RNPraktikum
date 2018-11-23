@@ -26,7 +26,7 @@ get_string(unsigned int timeout, char msg[1024]) {
 	   return EOF;
            break;
 	default: // Zeichen liegt vor
-           read(0,&msg,1024); // muss read sein, das select auf auf fd arbeitet
+           read(0, &msg, 1024); // muss read sein, das select auf auf fd arbeitet
            return 0; 
     }
 }

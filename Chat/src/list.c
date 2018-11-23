@@ -17,21 +17,21 @@ member_t *list = NULL;
 int counter = 0;
 
 int
-List_init (const char id[16]) {
+List_init (uint8_t id[16], uint32_t ip) {
 
-	if (list != NULL) {
-		errno = EADDRINUSE;
-		return -1;
-	}
+//	if (list != 0) {
+//		errno = EADDRINUSE;
+//		return -1;
+//	}
 
 	list = malloc(sizeof(member_t));
 
 	if (list == NULL) {
-		errno = ENOMEM;
 		return -1;
 	}
 
 	memcpy(list->id, id, strlen(id)+1);
+	list->ip =  ip;
 	list->next = NULL;
 	counter++;
 
@@ -39,25 +39,7 @@ List_init (const char id[16]) {
 }
 
 int
-List_set_first_ip(void) {
-	struct ifreq ifr;
-	strcpy(ifr.ifr_name, INTERFACE_NAME);
-	
-	if (ioctl(*list->sock_fd, SIOCGIFADDR, &ifr) != 0) {
-		perror("ioctl: ");
-		return -1;
-	}
-
-	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
-
-	list->ip =  my_ip->sin_addr.s_addr;
-
-	return 0;
-
-}
-
-int
-List_new_member (const char id[16], const uint32_t ip, int *sockfd) {
+List_new_member (uint8_t id[16], uint32_t ip, int *sockfd) {
 	member_t *new_member = NULL;
 	member_t *p;
 
@@ -68,7 +50,7 @@ List_new_member (const char id[16], const uint32_t ip, int *sockfd) {
 
 
 	for (p = list; p->next != NULL; p = p->next){
-		if ((strcmp(id, p->id)) == 0) {
+		if ((strncmp(id, p->id, 16)) == 0) {
 			break;
 		}
 	}
@@ -99,7 +81,7 @@ List_new_member (const char id[16], const uint32_t ip, int *sockfd) {
 }
 
 struct member
-List_search_member_id (const char id[16]) {
+List_search_member_id (uint8_t id[16]) {
 	struct member *p = NULL;
 	member_t search;
 
@@ -111,7 +93,7 @@ List_search_member_id (const char id[16]) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if ((strcmp(id, p->id)) == 0) {
+		if (strncmp(id, p->id, 16) == 0) {
 			search = *p;
 			return search;
 		}
@@ -121,7 +103,7 @@ List_search_member_id (const char id[16]) {
 }
 
 struct member
-List_search_member_ip (const uint32_t ip) {
+List_search_member_ip (uint32_t ip) {
 	struct member *p = NULL;
 	member_t search;
 
@@ -143,7 +125,7 @@ List_search_member_ip (const uint32_t ip) {
 }
 
 int
-List_delete_member (const char id[16]) {
+List_delete_member (uint8_t id[16]) {
 	member_t *del_member = NULL;
 	member_t *p = NULL;
 	
@@ -153,7 +135,7 @@ List_delete_member (const char id[16]) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if (p->id == id) {
+		if (strncmp(p->id, id, 16)) {
 			del_member = p;
 		}
 	}
@@ -195,6 +177,7 @@ List_delete (void) {
 void
 List_print (void) {
 	member_t *p = NULL;
+	struct in_addr ip_addr;
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
@@ -203,17 +186,18 @@ List_print (void) {
 
 	printf("_____________MEMBER_LIST____________\n\n");
 
-	for (p = list; p->next != NULL; p = p->next){
-		printf("id________%s_\n", p->id);
-		printf("ip________%d_\n", p->ip);
-		printf("sockfd____%d_\n", *p->sock_fd);
+	for (p = list; p != NULL; p = p->next){
+		ip_addr.s_addr = p->ip;
+		printf("id\t\t%s\n", p->id);
+		printf("ip\t\t%s\n", inet_ntoa(ip_addr));
+		printf("sockfd\t\t%d\n", p->sock_fd);
 		printf("\n");
 	}
 
 }
 
 int *
-List_get_sockfd_by_ip (const uint32_t ip) {
+List_get_sockfd_by_id (uint8_t id[16]) {
 	member_t *p = NULL;
 
 	if (list == NULL) {
@@ -222,7 +206,7 @@ List_get_sockfd_by_ip (const uint32_t ip) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if (p->ip == ip) {
+		if (strncmp(p->id, id, 16)) {
 			break;
 		}
 	}
@@ -236,7 +220,7 @@ List_get_sockfd_by_ip (const uint32_t ip) {
 }
 
 int *
-List_get_sockfd_by_id (const char id[16]) {
+List_get_sockfd_by_ip (uint32_t ip) {
 	member_t *p = NULL;
 
 	if (list == NULL) {
@@ -245,7 +229,7 @@ List_get_sockfd_by_id (const char id[16]) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if (p->id == id) {
+		if (p->ip == ip) {
 			break;
 		}
 	}

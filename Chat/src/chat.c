@@ -10,7 +10,6 @@
 #include "task.h"
 #include "list.h"
 #include "list_thrsafe.h"
-#include "get_string.h"
 
 pthread_t serv_thread;
 pthread_t cmd_control;
@@ -25,27 +24,32 @@ struct threadpool *send_pool;
 void
 help_function (void) {
 	printf("# /connect <ip-adress>\t\t-- Connects to another peer\n");
-	printf("# /quit\t\t-- Quits the program\n");
-	printf("# /info\t\t-- Displays list members\n");
-	printf("# /help\t\t-- Displays commands\n");
+	printf("# /quit\t\t\t\t-- Quits the program\n");
+	printf("# /info\t\t\t\t-- Displays list members\n");
+	printf("# /help\t\t\t\t-- Displays commands\n");
 
 }
 
 void *
 Cmd_routine (void *args ) {
-	char msg[1024];
-	char *cmd;
+	char msg[1024] = "";
+	char *cmd = "";
 
 	struct task job;
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcancelstate(PTHREAD_CANCEL_DEFERRED, NULL);
 	while(1) {
-		get_string(1, msg);
-//		fflush(stdin);
-//		fgets(msg, 1024, stdin);
+		memset(msg, 0, 1024);
+//		get_string(1, msg);
+		fflush(stdin);
+		fgets(msg, 1024, stdin);
 
 		job.arg = msg;
+
+		if (strncmp(msg, "", 1) == 0) {
+			continue;
+		}
 
 		if (msg[0] == '@') {
 			job.routine_for_task = send_msg;
@@ -55,22 +59,22 @@ Cmd_routine (void *args ) {
 
 			cmd = strtok(msg, " ");
 
-			if (strcmp(cmd, "/connect") == 0) {
+			if (strncmp(cmd, "/connect", 8) == 0) {
 				job.arg = strtok(NULL, "\n");
 				job.routine_for_task = send_sign_in;
 				Thpool_add_task(send_pool, job, 1);
 		
-			} else if (strcmp(cmd, "/quit") == 0) {
-				job.routine_for_task = send_quit;
-				Thpool_add_task(send_pool, job, 1);
+			} else if (strncmp(cmd, "/quit", 5) == 0) {
+				//job.routine_for_task = send_quit;
+				//Thpool_add_task(send_pool, job, 1);
 				pthread_exit(0);
 				break;
 		
-			} else if (strcmp(cmd, "/info") == 0){
+			} else if (strncmp(cmd, "/info", 5) == 0){
 				List_print();
 			
-			} else if (strcmp(cmd, "/help") == 0){
-				help_function();	
+			} else if (strncmp(cmd, "/help", 5) == 0){
+				help_function();
 			} else {
 				continue;
 			}
@@ -109,13 +113,23 @@ main (int argc, char *argv[]) {
 		goto recvfree;
 	}
 
+	if (Thrsafe_init() != 0) {
+		goto sendfree;
+	}
+
+	printf("-- Serv_thread create...\n");
 	pthread_create(&serv_thread, NULL, Server_thread, recv_pool);
+
+	printf("-- Cmd_thread create...\n");
 	pthread_create(&cmd_control, NULL, Cmd_routine, NULL);
 
 	pthread_join(cmd_control, NULL);
 	pthread_cancel(serv_thread);
 	pthread_join(serv_thread, NULL);
 
+	Thrsafe_clean();
+
+	sendfree:
 		Thpool_destroy(send_pool);
 		Thpool_free(send_pool);
 	recvfree:

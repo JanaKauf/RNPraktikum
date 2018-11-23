@@ -19,10 +19,11 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 
 #include "thpool.h"
 #include "task.h"
-#include "list_thrsafe.h"
 #include "list.h"
 
 
@@ -34,6 +35,8 @@ int yes = 1;
 int
 Server_init(void) {
 	struct addrinfo *servlist, *p;
+
+	char ip[INET_ADDRSTRLEN];
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -72,12 +75,17 @@ Server_init(void) {
 		return errno;
 	}
 
+	struct ifreq ifr;
+	strcpy(ifr.ifr_name, INTERFACE_NAME);	
 
-	if (Thrsafe_set_sockfd_id(ID_NAME, &sock_fd) != 0) {
+	if (ioctl(sock_fd, SIOCGIFADDR, &ifr) != 0) {
+		perror("ioctl: ");
 		return -1;
 	}
 
-	if (List_set_first_ip() != 0) {
+	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
+
+	if (List_init("ID_NAME", my_ip->sin_addr.s_addr) != 0) {
 		return -1;
 	}
 
@@ -102,7 +110,6 @@ Server_thread (void *args) {
 	struct threadpool *pool = args;
 	struct task job;
 
-
 	if (Server_init() != 0) {
 		return &errno;
 	}
@@ -111,7 +118,7 @@ Server_thread (void *args) {
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcancelstate(PTHREAD_CANCEL_DEFERRED, NULL);
-	for(;;) {
+	while(1) {
 		
         addr_len = sizeof client_addr;
         new_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &addr_len);

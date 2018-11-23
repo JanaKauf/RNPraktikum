@@ -201,6 +201,8 @@ send_sign_in (void * arg) {
 
 void
 send_quit (void * buffer) {
+	int i;
+	struct member *p = List_get_list();
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
@@ -213,8 +215,15 @@ send_quit (void * buffer) {
 	//sign_in_buf[6] = crc & 0x0000FF00 >> 8;
 	//sign_in_buf[7] = crc & 0x000000FF;
 
-	packet.payload = (uint8_t *)ID_NAME;
-	send_to_server(&packet, buffer);
+	p = p->next;
+
+	packet.payload = (uint8_t *)"ID_NAME";
+	for (i = 0; i < List_no_of_members() - 1; i++){
+
+		send_to_server(&packet, buffer);
+		p = p->next;
+	}
+
 }
 
 void
@@ -435,7 +444,7 @@ recv_from_client (void *sockfd) {
 	
     if ((num_bytes = recv(*new_fd, (struct packet *)&pck, sizeof (struct packet), 0)) <= 0) {
 		if (num_bytes == 0) {
-			printf("server_thread: sockfd %d hung up\n", new_fd);
+			printf("server_thread: sockfd %d hung up\n", *new_fd);
 
 		} else {
 	        perror("recv:");
