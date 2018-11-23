@@ -30,7 +30,7 @@ read_int_from_file(char *file, int *val) {
 }
 
 int
-taskqueue_send(const mqd_t mqdes, const struct task task, 
+Taskqueue_send(const mqd_t mqdes, const struct task task, 
 					const unsigned int prio, const bool blocking) {
    const struct timespec timeout = {0,0};
    int erg;
@@ -49,7 +49,7 @@ taskqueue_send(const mqd_t mqdes, const struct task task,
 }
 
 mqd_t
-taskqueue_create(const char *name, const unsigned int size){
+Taskqueue_create(const char *name, const unsigned int size){
    struct mq_attr attr;
 
    attr.mq_maxmsg = size;
@@ -80,7 +80,7 @@ taskqueue_create(const char *name, const unsigned int size){
 }
 
 struct task
-taskqueue_receive(const mqd_t mqdes) {
+Taskqueue_receive(const mqd_t mqdes) {
    unsigned int prio;
    struct task task = {NULL, NULL};
 
@@ -91,14 +91,14 @@ taskqueue_receive(const mqd_t mqdes) {
 }
 
 void
-taskqueue_close(const mqd_t mqdes) {
+Taskqueue_close(const mqd_t mqdes) {
    if (-1 == mq_close(mqdes)) {
       perror("Error in closeTaskQueue");
    }
 }
 
 void
-taskqueue_destroy(const char * name){
+Taskqueue_destroy(const char * name){
    if ((-1 == mq_unlink(name)) && (errno != ENOENT)) {
       perror("Error in destroyTaskQueue");
    }

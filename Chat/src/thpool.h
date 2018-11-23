@@ -12,16 +12,16 @@ struct threadpool {
     mqd_t taskqueue;
 };
 
-extern struct threadpool* thpool_create(mqd_t taskqueue);
+extern struct threadpool* Thpool_create(mqd_t taskqueue);
 
-extern int thpool_add_task(struct threadpool * pool,
+extern int Thpool_add_task(struct threadpool *pool,
 							struct task job,
 							int prio);
 
-void * thpool_routine(void * threadpool);
+void * Thpool_routine(void *threadpool);
 
-extern int thpool_destroy(struct threadpool * pool);
+extern int Thpool_destroy(struct threadpool *pool);
 
-extern int thpool_free(struct threadpool * pool);
+extern int Thpool_free(struct threadpool *pool);
 
 #endif /* _THPOOL_H*/

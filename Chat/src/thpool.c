@@ -8,9 +8,9 @@
 #include "thpool.h"
 
 struct threadpool *
-thpool_create(const mqd_t taskqueue) {
+Thpool_create(const mqd_t taskqueue) {
     int i;
-    struct threadpool * pool;
+    struct threadpool *pool;
 
     if ((pool = malloc(sizeof(struct threadpool))) == NULL) {
         errno = EADDRNOTAVAIL;
@@ -35,8 +35,8 @@ thpool_create(const mqd_t taskqueue) {
 
     for (i = 0; i < NUM_THREADS; i++) {
         if (pthread_create(&(pool->threads[i]), NULL,
-                           thpool_routine, (void *) pool) != 0) {
-            thpool_destroy(pool);
+                           Thpool_routine, (void *) pool) != 0) {
+            Thpool_destroy(pool);
             return NULL;
         }
    }
@@ -45,13 +45,13 @@ thpool_create(const mqd_t taskqueue) {
 
     err:
         if (pool) {
-            thpool_free(pool);
+            Thpool_free(pool);
         }
         return NULL;
 }
 
 int
-thpool_add_task (struct threadpool * pool, const struct task job,
+Thpool_add_task (struct threadpool *pool, const struct task job,
 					const int prio) {
     if (pool == NULL) {
         errno = EADDRNOTAVAIL;
@@ -65,14 +65,14 @@ thpool_add_task (struct threadpool * pool, const struct task job,
 	if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 		perror("thpool: pthread_mutex_unlock");
 
-	if((errno = taskqueue_send(pool->taskqueue, job, prio, true)) != 0)
+	if((errno = Taskqueue_send(pool->taskqueue, job, prio, true)) != 0)
 		perror("thpool: sendToTaskQueue");
 
     return 0;
 }
 
 void *
-thpool_routine(void * threadpool) {
+Thpool_routine(void *threadpool) {
     struct threadpool *pool = (struct threadpool *) threadpool;
     struct task job;
 
@@ -86,7 +86,7 @@ thpool_routine(void * threadpool) {
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
 
-        job = taskqueue_receive(pool->taskqueue);
+        job = Taskqueue_receive(pool->taskqueue);
 
         (*(job.routine_for_task))(job.arg);
 
@@ -97,7 +97,7 @@ thpool_routine(void * threadpool) {
 }
 
 int
-thpool_destroy(struct threadpool * pool) {
+Thpool_destroy(struct threadpool *pool) {
     int i;
 
     if (pool == NULL) {
@@ -125,7 +125,7 @@ thpool_destroy(struct threadpool * pool) {
 			perror("thpool: pthread_cancel");
     }
 
-    taskqueue_close(pool->taskqueue);
+    Taskqueue_close(pool->taskqueue);
 
     for (i = 0; i < NUM_THREADS; i++) {
 		if ((errno = pthread_join(pool->threads[i], NULL)))
@@ -133,14 +133,14 @@ thpool_destroy(struct threadpool * pool) {
         }
 
     if (!errno) {
-        thpool_free(pool);
+        Thpool_free(pool);
     }
 
     return errno;
 }
 
 int
-thpool_free (struct threadpool * pool) {
+Thpool_free (struct threadpool *pool) {
     if (pool == NULL) {
         errno = EADDRNOTAVAIL;
         perror("thpool: thpool_free - invalid_pool");
