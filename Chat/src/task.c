@@ -15,6 +15,8 @@
 #include "list_thrsafe.h"
 #include "task.h"
 #include "taskqueue.h"
+#include "chat.h"
+#include "thpool.h"
 
 #define PORT "6100"
 
@@ -23,7 +25,7 @@
 void
 connect_to_server (void *args) {
 	struct args_connect *connect_args = (struct args_connect *)args;
-	int sockfd;
+	int sock_fd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
 	int yes = 1;
@@ -38,13 +40,13 @@ connect_to_server (void *args) {
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
-		if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if((sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("client: socket");
 			continue;
 		}
 
-		if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sockfd);
+		if(connect(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sock_fd);
 			perror("client: connect");
 			continue;
 		}
@@ -59,13 +61,13 @@ connect_to_server (void *args) {
 		return ;
 	}
 	//TODO put sockfd in member list
-	connect_args->sock_fd = &sockfd;
+	connect_args->sock_fd = &sock_fd;
 
 }
 
 void
-disconnect_from_server (void * socket) {
-	int * sock_fd = socket;
+disconnect_from_server (void * sockfd) {
+	int * sock_fd = sockfd;
 	close(*sock_fd);
 
 }
@@ -74,7 +76,7 @@ disconnect_from_server (void * socket) {
 
 
 int
-send_all_data (char *buf, int *length, int *socket) {
+send_all_data (char *buf, int *length, int *sockfd) {
 	int total = 0;
 	int bytes_left = *length;
 	int n;
@@ -115,15 +117,15 @@ send_to_server (void *args) {
 
 		task_to_connect.arg = connect_args;
 		task_to_connect.routine_for_task = connect_to_server;
-		thpool_add_task(send_args->connect_pool, task_to_connect, 1);
+		Thpool_add_task(Chat_get_sendpool(), task_to_connect, 1);
 
 		//task_to_send.arg = _args->;
 		struct task task_to_send;
 		task_to_send.routine_for_task = send_to_server;
 		task_to_send.arg = send_args;
 
-		thpool_add_task(send_args->send_pool, task_to_send, 1);
-		close(send_args->sock_fd);
+		Thpool_add_task(Chat_get_sendpool(), task_to_send, 1);
+		close(*send_args->sock_fd);
 		perror("send_to_server: ");
 		return ;
 	
@@ -135,19 +137,14 @@ send_to_server (void *args) {
 
 void
 send_sign_in (void * buffer) {
-//	struct args_send{
-//		int * sock_fd;
-//		void * buf;
-#include "list.h"
-//		struct threadpool * send_pool;
-//		struct threadpool * connect_pool;
 	int i;
 	int j;
 	struct args_send send_args;
-	struct member * p = list;
-	int num_of_members = number_of_members();
+	struct member *p = list;
+	int num_of_members = List_no_of_members();
 	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES);
-	char sign_in_buf[bufsize];
+	unsigned char sign_in_buf[bufsize];
+
 	//header of member list
 	sign_in_buf[0] = VERSION; //version
 	sign_in_buf[1] = SIGN_IN; //type
@@ -186,10 +183,11 @@ send_quit (void * buffer) {
 	int i;
 	int j;
 	struct args_send send_args;
-	struct member * p = list;
-	int num_of_members = number_of_members();
+	struct member *p = list;
+	int num_of_members = List_no_of_members();
 	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES);
-	char sign_in_buf[bufsize];
+	unsigned char sign_in_buf[bufsize];
+
 	//header of member list
 	sign_in_buf[0] = VERSION; //version
 	sign_in_buf[1] = SIGN_OUT; //type
@@ -244,7 +242,7 @@ recv_sign_in (unsigned char * buffer,
 	uint32_t ip;
 	char *id;
 
-	int *socket;
+	int *sock_fd;
 
 	struct args_connect c_args;
 	struct in_addr i_ip;
@@ -261,11 +259,11 @@ recv_sign_in (unsigned char * buffer,
 		
 		i_ip.s_addr = ip;
 		c_args.ip = inet_ntoa(i_ip);
-		c_args.sock_fd = socket;
+		c_args.sock_fd = sock_fd;
 
 		connect_to_server(&c_args);
 
-		if (thrsafe_new_member(id, ip, socket) != 0) {
+		if (Thrsafe_new_member(id, ip, sock_fd) != 0) {
 			printf("task: recv_member_list fail to add id %s\n", id);
 		
 		}
@@ -281,7 +279,7 @@ recv_sign_in (unsigned char * buffer,
 
 int
 recv_quit (unsigned char *id) {
-	if (thrsafe_delete_member_id(id) != 0) {
+	if (Thrsafe_delete_member_id(id) != 0) {
 		return -1;
 	}
 
@@ -292,7 +290,7 @@ int
 recv_msg (unsigned char *msg, const uint32_t ip) {
 	struct member messeger;
 
-	messeger = search_member_ip(ip);
+	messeger = List_search_member_ip(ip);
 	
 	printf("@%s: ", messeger.id);
 
@@ -309,7 +307,7 @@ recv_member_list (unsigned char *buffer, uint16_t length) {
 	uint32_t ip;
 	char *id;
 
-	int * socket;
+	int *sock_fd;
 
 	struct args_connect c_args;
 	struct in_addr i_ip;
@@ -326,11 +324,11 @@ recv_member_list (unsigned char *buffer, uint16_t length) {
 
 		i_ip.s_addr = ip;
 		c_args.ip = inet_ntoa(i_ip);
-		c_args.sock_fd = socket;
+		c_args.sock_fd = sock_fd;
 
 		connect_to_server(&c_args);
 
-		if (thrsafe_new_member(id, ip, socket) != 0) {
+		if (Thrsafe_new_member(id, ip, sock_fd) != 0) {
 			printf("task: recv_member_list fail to add id %s\n", id);
 		
 		}
@@ -343,7 +341,7 @@ int
 recv_error(unsigned char *error, const uint32_t ip) {
 	struct member messeger;
 
-	messeger = search_member_ip(ip);
+	messeger = List_search_member_ip(ip);
 	printf("@%s: ", messeger.id);
 
 	printf("error: %s\n", error);
@@ -352,7 +350,7 @@ recv_error(unsigned char *error, const uint32_t ip) {
 }
 
 void
-recv_from_client (void *socket) {
+recv_from_client (void *sockfd) {
 	uint8_t type;	
 	uint16_t length;
 	uint32_t crc;
@@ -361,14 +359,14 @@ recv_from_client (void *socket) {
 	int num_bytes;
 
 	unsigned char * buf;
-	int *new_fd = socket;
+	int *new_fd = sockfd;
 
 	struct sockaddr_in client_ip;
 	socklen_t addr_size = sizeof(client_ip);
 	
     if ((num_bytes = recv(*new_fd, buf, sizeof buf, 0)) <= 0) {
 		if (num_bytes == 0) {
-			printf("server_thread: socket %d hung up\n", new_fd);
+			printf("server_thread: sockfd %d hung up\n", new_fd);
 
 		} else {
 	        perror("recv:");

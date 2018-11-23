@@ -15,22 +15,19 @@ struct args_connect{
 };
 
 extern void connect_to_server (void*);
-extern void disconnect_from_server (void * socket);
+extern void disconnect_from_server (void * sockfd);
 
 //###################SEND_TASKS#######################
 struct args_send{
-	int * sock_fd;
 	void * buf;
-	struct threadpool * send_pool;
-	struct threadpool * connect_pool;
-
+	int * sock_fd;
 };
 
 extern void send_sign_in (void * buffer);
 
 //###################RECV_TASKS#######################
 
-extern void recv_from_client(void * socket);
+extern void recv_from_client(void * sockfd);
 
 /*
 extern void recv_quit(void * buf);

@@ -25,7 +25,7 @@
 #include "list.h"
 
 
-int sockfd;
+int sock_fd;
 struct addrinfo hints;
 struct sockaddr_storage their_addr;
 int yes = 1;
@@ -45,19 +45,19 @@ Server_init(void) {
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
-		if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if((sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("server: socket");
 			continue;
 		}
 
-		if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
+		if(setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 			perror("server: setsockopt");
 			errno = EPERM;
 			return errno;
 		}
 
-		if(bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sockfd);
+		if(bind(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sock_fd);
 			perror("server: bind");
 			continue;
 		}
@@ -72,7 +72,7 @@ Server_init(void) {
 	}
 
 
-	if (Thrsafe_set_socket_id(ID_NAME, &sockfd) != 0) {
+	if (Thrsafe_set_sockfd_id(ID_NAME, &sock_fd) != 0) {
 		return -1;
 	}
 
@@ -80,7 +80,7 @@ Server_init(void) {
 		return -1;
 	}
 
-	if(listen(sockfd, HOLD_QUEUE) == -1) {
+	if(listen(sock_fd, HOLD_QUEUE) == -1) {
 		errno = EPERM;
 		return errno;
 	}
@@ -116,14 +116,14 @@ Server_thread (void *args) {
 	for(;;) {
 		
         addr_len = sizeof client_addr;
-        new_fd = accept(sockfd, (struct sockaddr *)&client_addr, &addr_len);
+        new_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &addr_len);
 
         if (new_fd == -1) {
 			perror("accept");
 			continue;
 		}
 
-        printf("server_thread: new connection from %s on socket %d\n",
+        printf("server_thread: new connection from %s on sockfd %d\n",
 				inet_ntop(client_addr.ss_family,
 						&(((struct sockaddr_in*)&client_addr)->sin_addr), client_ip,
 						INET_ADDRSTRLEN),
@@ -132,7 +132,7 @@ Server_thread (void *args) {
 		job.routine_for_task = recv_from_client;
 		job.arg = &new_fd;
 
-		thpool_add_task(pool, job, 1);
+		Thpool_add_task(pool, job, 1);
 		printf("Task added.");
 	}
 

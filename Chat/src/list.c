@@ -57,7 +57,7 @@ List_set_first_ip(void) {
 }
 
 int
-List_new_member (const char id[16], const uint32_t ip, int *socket) {
+List_new_member (const char id[16], const uint32_t ip, int *sockfd) {
 	member_t *new_member = NULL;
 	member_t *p;
 
@@ -86,7 +86,7 @@ List_new_member (const char id[16], const uint32_t ip, int *socket) {
 	} 
 	memcpy(list->id, id, strlen(id)+1);
 	new_member->ip = ip;
-	new_member->sock_fd = socket;
+	new_member->sock_fd = sockfd;
 	new_member->next = NULL;
 
 	for (p = list; p != NULL; p = p->next);
@@ -206,14 +206,14 @@ List_print (void) {
 	for (p = list; p->next != NULL; p = p->next){
 		printf("id________%s_\n", p->id);
 		printf("ip________%d_\n", p->ip);
-		printf("socket____%d_\n", *p->sock_fd);
+		printf("sockfd____%d_\n", *p->sock_fd);
 		printf("\n");
 	}
 
 }
 
 int *
-List_get_socket_by_ip (const uint32_t ip) {
+List_get_sockfd_by_ip (const uint32_t ip) {
 	member_t *p = NULL;
 
 	if (list == NULL) {
@@ -236,7 +236,7 @@ List_get_socket_by_ip (const uint32_t ip) {
 }
 
 int *
-List_get_socket_by_id (const char id[16]) {
+List_get_sockfd_by_id (const char id[16]) {
 	member_t *p = NULL;
 
 	if (list == NULL) {
