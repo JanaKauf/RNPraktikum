@@ -98,13 +98,10 @@ Server_thread (void *args) {
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len;
 	char client_ip[INET_ADDRSTRLEN];
-	int num_bytes;
-	char buf[1024];
 
 	struct threadpool *pool = args;
 	struct task job;
 
-	uint8_t type;
 
 	if (Server_init() != 0) {
 		return &errno;

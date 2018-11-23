@@ -3,7 +3,7 @@
 
 CC      = gcc
 CFLAGS  = -Wall -o2
-LDFLAGS = -g -lpthread
+LDFLAGS = -g -pthread -lrt
 
 SRCDIR  = src
 OBJDIR  = obj
@@ -13,7 +13,7 @@ SRC     = $(wildcard $(SRCDIR)/*.c)
 OBJ     = $(patsubst $(SRCDIR)/%,$(OBJDIR)/%,$(SRC:.c=.o))
 DEPS    = $(OBJ:.o=.d)
 # ifdef cond.c
-TARGETS = $(BINDIR)/main
+TARGETS = $(BINDIR)/chat
 
 RED = \033[0;31m
 NC = \033[0m
@@ -32,10 +32,10 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 # ifdef cond.c
-$(BINDIR)/main: $(OBJDIR)/main.o $(OBJDIR)/list.o $(OBJDIR)/net.o
+$(BINDIR)/chat: $(OBJDIR)/chat.o $(OBJDIR)/server.o $(OBJDIR)/taskqueue.o $(OBJDIR)/thpool.o $(OBJDIR)/task.o $(OBJDIR)/list.o $(OBJDIR)/list_thrsafe.o
 	@echo -e "${RED}EXECUTABLE von $< ${NC}"
 	@mkdir -p $(@D)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 install:
 	@echo -e "${RED}Installation vorbereitet! ${NC}"
@@ -51,4 +51,4 @@ delete: clean
 	rm -r -f $(BINDIR)
 
 run:
-	bin/./main
+	bin/./chat

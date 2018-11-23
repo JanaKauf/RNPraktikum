@@ -31,7 +31,6 @@ connect_to_server (void *args) {
 	int sock_fd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
-	int yes = 1;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -102,16 +101,16 @@ send_to_server (struct packet* packet, int * sockfd) {
 //	struct args_send *send_args = args;
 	int length = sizeof(packet);
 
-	if (send_all_data(packet, &length, sock_fd) == -1) {
+	if (send_all_data(packet, &length, sockfd) == -1) {
 		errno = EPERM;
 		printf("Only send %d bytes\n", length);
 
 		//send failed so we try to connect and send again
 //		struct task task_to_connect;
 //		struct args_connect *connect_args;
-		struct sockaddr *addr;
-		socklen_t *addr_length;
-		char ip_addr[INET_ADDRSTRLEN];
+//		struct sockaddr *addr;
+//		socklen_t *addr_length;
+//		char ip_addr[INET_ADDRSTRLEN];
 
 //		getpeername(*sock_fd, addr, addr_length);
 
@@ -129,7 +128,7 @@ send_to_server (struct packet* packet, int * sockfd) {
 //
 //		Thpool_add_task(Chat_get_sendpool(), task_to_send, 1);
 		if (packet->typ == SIGN_IN) {
-			close(*sock_fd);
+			close(*sockfd);
 		}
 //		close(*sock_fd);
 		perror("send_to_server: ");
@@ -147,14 +146,14 @@ send_sign_in (void * arg) {
 	int j;
 	char * ip = arg;
 	struct packet packet;
-	struct member *p = list;
+	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES);
 	int sock_fd;
 
-	struct args_connect con_args;
-	con_args.sock_fd = &sock_fd;
-	con_args.ip = ip;
+	struct args_connect * con_args;
+	con_args->sock_fd = &sock_fd;
+	con_args->ip = ip;
 
 	connect_to_server(con_args);
 
@@ -164,7 +163,7 @@ send_sign_in (void * arg) {
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_IN; //type
-	packet.length = htons(bufsize);
+	packet.length = htons(num_of_members * SIZE_OF_MEMBER_IN_BYTES);
 	packet.payload = payload;
 
 	//TODO get CRC
@@ -178,7 +177,7 @@ send_sign_in (void * arg) {
 
 	int ip_addr_offset;
 	int id_offset;
-	uint32_t ip_to_send;
+
 	//set content of member list
 	for(i = 0; i < num_of_members; i++) {
 		ip_addr_offset = i * SIZE_OF_MEMBER_IN_BYTES;
@@ -202,15 +201,11 @@ send_sign_in (void * arg) {
 
 void
 send_quit (void * buffer) {
-	struct member *p = list;
-	int num_of_members = List_no_of_members();
-	uint16_t bufsize = ID_LENGTH;
-	unsigned char payload[bufsize];
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
-	packet.length = htons(bufsize); //length
+	packet.length = htons(ID_LENGTH); //length
 	//TODO get CRC
 	//uint32_t crc
 	//sign_in_buf[4] = crc & 0xFF000000 >> 24;
@@ -218,25 +213,17 @@ send_quit (void * buffer) {
 	//sign_in_buf[6] = crc & 0x0000FF00 >> 8;
 	//sign_in_buf[7] = crc & 0x000000FF;
 
-	int i;
-	for(i = 0; i < ID_LENGTH; i++) {
-		packet.payload[i] = list->id[i];
-	}
-
-
-
-
+	packet.payload = (uint8_t *)ID_NAME;
+	send_to_server(&packet, buffer);
 }
 
 void
 send_msg (void * buffer) {
-	struct member *p = list;
 	char* id = strtok(buffer, " \n\0");
 	id = ++id; //remove @ from id
-	char * msg = strtok(NULL, " \n\0");
+	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
 
-	int sock_fd = List_get_sockfd_by_id();
-	int num_of_members = List_no_of_members();
+	int * sock_fd = List_get_sockfd_by_id(id);
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
@@ -245,12 +232,12 @@ send_msg (void * buffer) {
 	packet.payload = msg;
 //	packet.crc
 
-	send_to_server(&packet, &sock_fd);
+	send_to_server(&packet, sock_fd);
 }
 
 void
 send_member_list (void * buffer) {
-	struct member *p = list;
+	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = num_of_members * SIZE_OF_MEMBER_IN_BYTES;
 	uint8_t payload[bufsize];
@@ -279,28 +266,25 @@ send_member_list (void * buffer) {
 
 
 		for(j = ip_addr_offset + member_offset; j < member_offset + SIZE_OF_HEADER_IN_BYTES; j++) {
-			payload[j] = list->id[j];
+			payload[j] = p->id[j];
 		}
 		p = p->next;
 	}
 	packet.payload = payload;
-	send_to_server(packet, buffer);
+	send_to_server(&packet, buffer);
 }
 
 void
 send_error(void *buffer) {
-	struct member *p = list;
-	int num_of_members = List_no_of_members();
-	uint16_t bufsize = 8;
-	uint8_t payload[bufsize] = "Error";
+	uint8_t * payload = (uint8_t *)"Error";
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = ERROR; //type
-	packet.length = htons(bufsize); //length
+	packet.length = htons(5); //length
 	packet.payload = payload;
 
-	send_to_server(packet, buffer);
+	send_to_server(&packet, buffer);
 }
 
 
@@ -312,7 +296,7 @@ recv_sign_in (uint8_t * buffer,
 
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
-	char *id;
+	uint8_t *id;
 
 	struct threadpool * send_pool;
 	send_pool = Chat_get_sendpool();
@@ -355,6 +339,7 @@ recv_sign_in (uint8_t * buffer,
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
+	return 0;
 }
 
 int
@@ -416,6 +401,7 @@ recv_member_list (uint8_t *buffer, int *sockfd) {
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
+	return 0;
 }
 
 int

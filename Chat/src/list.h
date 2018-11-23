@@ -40,4 +40,6 @@ extern int* List_get_sockfd_by_id (const char id[16]);
 
 extern int List_no_of_members (void);
 
+extern struct member * List_get_list(void);
+
 #endif /* _LIST_H */

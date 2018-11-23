@@ -264,3 +264,9 @@ List_no_of_members(void) {
 
 }
 
+struct member *
+List_get_list (void) {
+	return list;
+
+}
+

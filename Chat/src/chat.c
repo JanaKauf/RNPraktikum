@@ -114,7 +114,6 @@ main (int argc, char *argv[]) {
 	pthread_cancel(serv_thread);
 	pthread_join(serv_thread, NULL);
 
-	sendfree:	
 		Thpool_destroy(send_pool);
 		Thpool_free(send_pool);
 	recvfree:
