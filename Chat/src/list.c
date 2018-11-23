@@ -63,7 +63,7 @@ List_new_member (const char id[16], const uint32_t ip, int *socket) {
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
-		return errno;
+		return -1;
 	}
 
 
@@ -75,14 +75,14 @@ List_new_member (const char id[16], const uint32_t ip, int *socket) {
 
 	if (p != NULL) {
 		errno = EPERM;
-		return errno;
+		return -1;
 	}
 
 	new_member = malloc(sizeof(member_t));
 
 	if (new_member == NULL) {
 		errno = ENOMEM;
-		return errno;
+		return -1;
 	} 
 	memcpy(list->id, id, strlen(id)+1);
 	new_member->ip = ip;
@@ -178,7 +178,7 @@ List_delete (void) {
 
 	if (list == NULL) {
 		errno = EADDRNOTAVAIL;
-		return errno;
+		return -1;
 	}
 
 	p = list;
