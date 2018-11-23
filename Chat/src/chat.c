@@ -35,8 +35,6 @@ Cmd_routine (void *args ) {
 	char msg[1024];
 	char *cmd;
 
-//	struct args_send c_args;
-
 	struct task job;
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
@@ -56,10 +54,6 @@ Cmd_routine (void *args ) {
 			cmd = strtok(msg, " ");
 
 			if (strcmp(cmd, "/connect") == 0) {
-//				job.routine_for_task = connect_to_server;
-//				job.arg = &c_args;
-//				Thpool_add_task(send_pool, job, 1);
-
 				job.arg = strtok(NULL, "\n");
 				job.routine_for_task = send_sign_in;
 				Thpool_add_task(send_pool, job, 1);
@@ -79,11 +73,9 @@ Cmd_routine (void *args ) {
 				continue;
 			}
 		}
-
-
-
 			
 	}
+	return NULL;
 }
 
 int
@@ -119,6 +111,8 @@ main (int argc, char *argv[]) {
 	pthread_create(&cmd_control, NULL, Cmd_routine, NULL);
 
 	pthread_join(cmd_control, NULL);
+	pthread_cancel(serv_thread);
+	pthread_join(serv_thread, NULL);
 
 	sendfree:	
 		Thpool_destroy(send_pool);
