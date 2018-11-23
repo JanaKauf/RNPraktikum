@@ -18,6 +18,7 @@
 #include "taskqueue.h"
 #include "chat.h"
 #include "thpool.h"
+#include "packet.h"
 
 #define PORT "6100"
 
@@ -237,26 +238,35 @@ send_error(void *buffer) {
 
 //######################RECV_TASKS###############################
 int
-recv_sign_in (unsigned char * buffer,
-		const uint32_t ip_addr, int length, int * sockfd) {
+recv_sign_in (uint8_t * buffer,
+		const uint32_t ip_addr, int * sockfd) {
 
+	uint8_t no_member = buffer[0];
 	uint32_t ip;
 	char *id;
+
+	struct threadpool * send_pool;
+	send_pool = Chat_get_sendpool();
+
+	struct task job;
+	job.routine_for_task = send_member_list;
+	job.arg = sockfd;
+	Thpool_add_task(send_pool, job, 0);
 
 //	int *sock_fd;
 
 //	struct args_connect c_args;
 //	struct in_addr i_ip;
 
-	int counter = 0;
+	int offset = 0;
 
-	for (int i = 0; i < length; i++) {
-		ip = (uint32_t) buffer[0+counter] << 24
-					| buffer[1+counter] << 16
-					| buffer[2+counter] << 8
-					| buffer[3+counter];
+	for (int i = 0; i < no_member; i++) {
+		ip = (uint32_t) buffer[1 + offset] << 24
+					| buffer[2 + offset] << 16
+					| buffer[3 + offset] << 8
+					| buffer[4 + offset];
 
-		id = &buffer[4+counter];	
+		id = &buffer[5 + offset];	
 		
 //		i_ip.s_addr = ip;
 //		c_args.ip = inet_ntoa(i_ip);
@@ -270,16 +280,16 @@ recv_sign_in (unsigned char * buffer,
 		}
 
 		if (i == 0) {
-			printf("sign in: %s\n", id);	
+			printf("sign in: %s sock_fd %d\n", id, *sockfd);	
 		}
 
-		counter += SIZE_OF_MEMBER_IN_BYTES;
+		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
 }
 
 int
-recv_quit (unsigned char *id) {
+recv_quit (uint8_t *id) {
 	if (Thrsafe_delete_member_id(id) != 0) {
 		return -1;
 	}
@@ -288,23 +298,24 @@ recv_quit (unsigned char *id) {
 }
 
 int
-recv_msg (unsigned char *msg, const uint32_t ip) {
+recv_msg (uint8_t *msg, const uint32_t ip) {
 	struct member messeger;
 
 	messeger = List_search_member_ip(ip);
 	
-	printf("@%s: ", messeger.id);
+	printf("#%s: %s\n", messeger.id, msg);
 
-	for (char * i = msg; *i != '\0'; i = i++) {
-		printf("%c", *i);
-	}
-	printf("\n");
+//	for (char * i = msg; *i != '\0'; i = i++) {
+//		printf("%c", *i);
+//	}
+//	printf("\n");
 
 	return 0;
 }
 
 int
-recv_member_list (unsigned char *buffer, uint16_t length, int *sockfd) {
+recv_member_list (uint8_t *buffer, int *sockfd) {
+	uint8_t no_member = buffer[0];
 	uint32_t ip;
 	char *id;
 
@@ -313,15 +324,15 @@ recv_member_list (unsigned char *buffer, uint16_t length, int *sockfd) {
 //	struct args_connect c_args;
 //	struct in_addr i_ip;
 
-	int counter = 0;
+	int offset = 0;
 
-	for (int i = 0; i < length; i++) {
-		ip = (uint32_t) buffer[0+counter] << 24
-					| buffer[1+counter] << 16
-					| buffer[2+counter] << 8
-					| buffer[3+counter];
+	for (int i = 0; i < no_member; i++) {
+		ip = (uint32_t) buffer[1 + offset] << 24
+					| buffer[2 + offset] << 16
+					| buffer[3 + offset] << 8
+					| buffer[4 + offset];
 
-		id = &buffer[4+counter];	
+		id = &buffer[5 + offset];	
 
 //		i_ip.s_addr = ip;
 //		c_args.ip = inet_ntoa(i_ip);
@@ -333,39 +344,41 @@ recv_member_list (unsigned char *buffer, uint16_t length, int *sockfd) {
 			printf("task: recv_member_list fail to add id %s\n", id);
 		
 		}
-		counter += SIZE_OF_MEMBER_IN_BYTES;
+		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
 }
 
 int
-recv_error(unsigned char *error, const uint32_t ip) {
+recv_error(uint8_t *error, const uint32_t ip) {
 	struct member messeger;
 
 	messeger = List_search_member_ip(ip);
-	printf("@%s: ", messeger.id);
+	printf("#%s: %s\n", messeger.id, error);
 
-	printf("error: %s\n", error);
+//	printf("error: %s\n", error);
 
 	return 0;
 }
 
 void
 recv_from_client (void *sockfd) {
+	packet_t pck;
+
 	uint8_t type;	
 	uint16_t length;
 	uint32_t crc;
-	unsigned char *payload;
+	uint8_t * payload;
 
 	int num_bytes;
 
-	unsigned char * buf;
+//	unsigned char buf[1024];
 	int *new_fd = sockfd;
 
 	struct sockaddr_in client_ip;
 	socklen_t addr_size = sizeof(client_ip);
 	
-    if ((num_bytes = recv(*new_fd, buf, sizeof buf, 0)) <= 0) {
+    if ((num_bytes = recv(*new_fd, (struct packet *)&pck, sizeof (struct packet), 0)) <= 0) {
 		if (num_bytes == 0) {
 			printf("server_thread: sockfd %d hung up\n", new_fd);
 
@@ -375,33 +388,32 @@ recv_from_client (void *sockfd) {
 
         close(*new_fd);
 	} else {
+		type = pck.typ;
 
-		type = buf[1];
+		length = ntohs(pck.length);
 
-		length = (uint16_t) buf[2] << 8
-							| buf[3];
+		crc = ntohl(pck.crc);
 
-		crc = (uint32_t) buf[4] << 24
-						| buf[5] << 16
-						| buf[6] << 8
-						| buf[7];
+		num_bytes -= 8;
 
-		payload = &buf[8];
-		
+		payload = malloc(num_bytes);	
+
+		payload = pck.payload;	
+
 		getpeername(*new_fd,
 				(struct sockaddr *)&client_ip,
 				&addr_size);
 				
 		switch (type) {
 			case SIGN_IN:
-				recv_sign_in(payload, client_ip.sin_addr.s_addr, length, new_fd);
+				recv_sign_in(payload, client_ip.sin_addr.s_addr, new_fd);
 				break;
 			case SIGN_OUT:
 				close(*new_fd);
 				recv_quit(payload);
 				break;
 			case MEMBER_LIST:
-				recv_member_list(payload, length, new_fd);
+				recv_member_list(payload, new_fd);
 				break;
 			case MESSAGE:
 				recv_msg(payload, client_ip.sin_addr.s_addr);
