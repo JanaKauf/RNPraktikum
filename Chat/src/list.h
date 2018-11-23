@@ -16,28 +16,28 @@ typedef struct member {
 	struct member *next;
 } member_t;
 
-extern int init_list (const char id[16]);
+extern int List_init (const char id[16]);
 
-extern int list_set_first_ip(void);
+extern int List_set_first_ip(void);
 
-extern int new_member (const char id[16],
+extern int List_new_member (const char id[16],
 		const uint32_t ip,
 		int *socket);
 
-extern struct member search_member_id (const char id[16]);
+extern struct member List_search_member_id (const char id[16]);
 
-extern struct member search_member_ip (const uint32_t ip);
+extern struct member List_search_member_ip (const uint32_t ip);
 
-extern int delete_member (const char id[16]);
+extern int List_delete_member (const char id[16]);
 
-extern int delete_list (void);
+extern int List_delete (void);
 
-extern void print_members (void);
+extern void List_print (void);
 
-extern int* get_socket_by_ip (const uint32_t ip);
+extern int* List_get_socket_by_ip (const uint32_t ip);
 
-extern int* get_socket_by_id (const char id[16]);
+extern int* List_get_socket_by_id (const char id[16]);
 
-extern int number_of_members (void);
+extern int List_no_of_members (void);
 
 #endif /* _LIST_H */

@@ -31,7 +31,7 @@ struct sockaddr_storage their_addr;
 int yes = 1;
 
 int
-server_init(void) {
+Server_init(void) {
 	struct addrinfo *servlist, *p;
 
 	memset(&hints, 0, sizeof(hints));
@@ -72,11 +72,11 @@ server_init(void) {
 	}
 
 
-	if (thrsafe_set_socket_id("Raupe\0", &sockfd) != 0) {
+	if (Thrsafe_set_socket_id(ID_NAME, &sockfd) != 0) {
 		return -1;
 	}
 
-	if (list_set_first_ip() != 0) {
+	if (List_set_first_ip() != 0) {
 		return -1;
 	}
 
@@ -92,7 +92,7 @@ server_init(void) {
 }
 
 void *
-server_thread (void *args) {
+Server_thread (void *args) {
 	int new_fd;
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len;
@@ -105,7 +105,7 @@ server_thread (void *args) {
 
 	uint8_t type;
 
-	if (server_init() != 0) {
+	if (Server_init() != 0) {
 		return &errno;
 	}
 

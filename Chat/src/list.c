@@ -17,7 +17,7 @@ member_t *list = NULL;
 int counter = 0;
 
 int
-init_list (const char id[16]) {
+List_init (const char id[16]) {
 
 	if (list != NULL) {
 		errno = EADDRINUSE;
@@ -39,7 +39,7 @@ init_list (const char id[16]) {
 }
 
 int
-list_set_first_ip(void) {
+List_set_first_ip(void) {
 	struct ifreq ifr;
 	strcpy(ifr.ifr_name, INTERFACE_NAME);
 	
@@ -57,7 +57,7 @@ list_set_first_ip(void) {
 }
 
 int
-new_member (const char id[16], const uint32_t ip, int *socket) {
+List_new_member (const char id[16], const uint32_t ip, int *socket) {
 	member_t *new_member = NULL;
 	member_t *p;
 
@@ -99,7 +99,7 @@ new_member (const char id[16], const uint32_t ip, int *socket) {
 }
 
 struct member
-search_member_id (const char id[16]) {
+List_search_member_id (const char id[16]) {
 	struct member *p = NULL;
 	member_t search;
 
@@ -121,7 +121,7 @@ search_member_id (const char id[16]) {
 }
 
 struct member
-search_member_ip (const uint32_t ip) {
+List_search_member_ip (const uint32_t ip) {
 	struct member *p = NULL;
 	member_t search;
 
@@ -143,7 +143,7 @@ search_member_ip (const uint32_t ip) {
 }
 
 int
-delete_member (const char id[16]) {
+List_delete_member (const char id[16]) {
 	member_t *del_member = NULL;
 	member_t *p = NULL;
 	
@@ -172,7 +172,7 @@ delete_member (const char id[16]) {
 }
 
 int
-delete_list (void) {
+List_delete (void) {
 	member_t *p = NULL;
 	member_t *previous = NULL;
 
@@ -193,7 +193,7 @@ delete_list (void) {
 }
 
 void
-print_members (void) {
+List_print (void) {
 	member_t *p = NULL;
 
 	if (list == NULL) {
@@ -213,7 +213,7 @@ print_members (void) {
 }
 
 int *
-get_socket_by_ip (const uint32_t ip) {
+List_get_socket_by_ip (const uint32_t ip) {
 	member_t *p = NULL;
 
 	if (list == NULL) {
@@ -236,7 +236,7 @@ get_socket_by_ip (const uint32_t ip) {
 }
 
 int *
-get_socket_by_id (const char id[16]) {
+List_get_socket_by_id (const char id[16]) {
 	member_t *p = NULL;
 
 	if (list == NULL) {
@@ -259,7 +259,7 @@ get_socket_by_id (const char id[16]) {
 }
 
 int
-number_of_members(void) {
+List_no_of_members(void) {
 	return counter;
 
 }

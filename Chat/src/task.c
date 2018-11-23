@@ -74,7 +74,7 @@ disconnect_from_server (void * socket) {
 
 
 int
-send_all_data (char *buf, int *length, int * socket) {
+send_all_data (char *buf, int *length, int *socket) {
 	int total = 0;
 	int bytes_left = *length;
 	int n;
@@ -93,8 +93,8 @@ send_all_data (char *buf, int *length, int * socket) {
 }
 
 void
-send_to_server (void * args) {
-	struct args_send * send_args = args;
+send_to_server (void *args) {
+	struct args_send *send_args = args;
 	int length = strlen(send_args->buf);
 
 	if (send_all_data(send_args->buf, &length, send_args->sock_fd) == -1) {
@@ -103,17 +103,19 @@ send_to_server (void * args) {
 
 		//send failed so we try to connect and send again
 		struct task task_to_connect;
-		struct args_connect * connect_args;
-		struct sockaddr* addr;
-		socklen_t* addr_length;
+		struct args_connect *connect_args;
+		struct sockaddr *addr;
+		socklen_t *addr_length;
 		char ip_addr[INET_ADDRSTRLEN];
+
 		getpeername(*(send_args->sock_fd), addr, addr_length);
+
 		connect_args->ip = inet_ntop(AF_INET, &(((struct sockaddr_in *)addr)->sin_addr), ip_addr, INET_ADDRSTRLEN);
 		connect_args->sock_fd = send_args->sock_fd;
+
 		task_to_connect.arg = connect_args;
 		task_to_connect.routine_for_task = connect_to_server;
 		thpool_add_task(send_args->connect_pool, task_to_connect, 1);
-
 
 		//task_to_send.arg = _args->;
 		struct task task_to_send;

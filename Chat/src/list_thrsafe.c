@@ -6,9 +6,9 @@
 pthread_mutex_t mutex;
 
 int
-init_thrsafe (void) {
+Thrsafe_init (void) {
 
-	if (errno = init_list(ID_NAME) != 0){
+	if (errno = List_init(ID_NAME) != 0){
 		perror("init_thrsafe: init_list");		
 		return -1;
 	}
@@ -21,12 +21,12 @@ init_thrsafe (void) {
 }
 
 int
-thrsafe_new_member(const char id[16], const uint32_t ip, int * socket) {
+Thrsafe_new_member(const char id[16], const uint32_t ip, int * socket) {
 	int err = 0;
 
 	pthread_mutex_lock(&mutex);
 
-	err = new_member(id, ip, socket);
+	err = List_new_member(id, ip, socket);
 
 	pthread_mutex_unlock(&mutex);
 
@@ -35,12 +35,12 @@ thrsafe_new_member(const char id[16], const uint32_t ip, int * socket) {
 }
 
 int
-thrsafe_delete_member_id (const char id[16]) {
+Thrsafe_delete_member_id (const char id[16]) {
 	int err = 0;
 
 	pthread_mutex_lock(&mutex);
 
-	err = delete_member(id);
+	err = List_delete_member(id);
 
 	pthread_mutex_unlock(&mutex);
 
@@ -49,8 +49,8 @@ thrsafe_delete_member_id (const char id[16]) {
 }
 
 int
-thrsafe_set_socket_id (const char id[16], int *socket) {
-	int *sock = get_socket_by_id(id);
+Thrsafe_set_socket_id (const char id[16], int *socket) {
+	int *sock = List_get_socket_by_id(id);
 
 	if (sock == NULL) {
 		return -1;
@@ -65,8 +65,8 @@ thrsafe_set_socket_id (const char id[16], int *socket) {
 }
 
 int
-thrsafe_set_socket_ip (const uint32_t ip, int *socket) {
-	int *sock = get_socket_by_ip(ip);
+Thrsafe_set_socket_ip (const uint32_t ip, int *socket) {
+	int *sock = List_get_socket_by_ip(ip);
 
 	if (sock == NULL) {
 		return -1;
@@ -81,9 +81,9 @@ thrsafe_set_socket_ip (const uint32_t ip, int *socket) {
 }
 
 int
-thrsafe_clean (void) {
+Thrsafe_clean (void) {
 
-	if (delete_list()) {
+	if (List_delete()) {
 		perror("thrsafe_clean: ");
 		return -1;
 	}
