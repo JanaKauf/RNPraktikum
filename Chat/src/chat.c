@@ -35,7 +35,7 @@ Cmd_routine (void *args ) {
 	char msg[1024];
 	char *cmd;
 
-	struct args_connect c_args;
+//	struct args_send c_args;
 
 	struct task job;
 
@@ -56,13 +56,12 @@ Cmd_routine (void *args ) {
 			cmd = strtok(msg, " ");
 
 			if (strcmp(cmd, "/connect") == 0) {
-				c_args.ip = strtok(NULL, "\n");
-				job.routine_for_task = connect_to_server;
-				job.arg = &c_args;
-				Thpool_add_task(send_pool, job, 1);
+//				job.routine_for_task = connect_to_server;
+//				job.arg = &c_args;
+//				Thpool_add_task(send_pool, job, 1);
 
+				job.arg = strtok(NULL, "\n");
 				job.routine_for_task = send_sign_in;
-				job.arg = c_args.sock_fd;
 				Thpool_add_task(send_pool, job, 1);
 		
 			} else if (strcmp(cmd, "/quit") == 0) {
