@@ -10,6 +10,7 @@
 #include "task.h"
 #include "list.h"
 #include "list_thrsafe.h"
+#include "get_string.h"
 
 pthread_t serv_thread;
 pthread_t cmd_control;
@@ -40,8 +41,9 @@ Cmd_routine (void *args ) {
 	pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcancelstate(PTHREAD_CANCEL_DEFERRED, NULL);
 	while(1) {
-		fflush(stdin);
-		fgets(msg, 1024, stdin);
+		get_string(1, msg);
+//		fflush(stdin);
+//		fgets(msg, 1024, stdin);
 
 		job.arg = msg;
 
@@ -83,9 +85,9 @@ main (int argc, char *argv[]) {
 
 	printf("-- Creating Task Queues...\n");
 
-	task_recv = Taskqueue_create("/TASK_RECV", 15);
-	task_send = Taskqueue_create("/TASK_SEND", 15);
-	task_connection = Taskqueue_create("/TASK_CONNECTION", 15);
+	task_recv = Taskqueue_create("/TASK_RECV", NUM_TASKS);
+	task_send = Taskqueue_create("/TASK_SEND", NUM_TASKS);
+	task_connection = Taskqueue_create("/TASK_CONNECTION", NUM_TASKS);
 
 	printf("-- Creating member_list...\n");
 

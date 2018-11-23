@@ -4,7 +4,7 @@
 #define SIZE_OF_HEADER_IN_BYTES 8
 #define SIZE_OF_MEMBER_IN_BYTES 20//((sizeof char) * 16) + sizeof(uint32)
 #define ID_LENGTH 16
-#define ID_NAME "Raupe\0"
+#define ID_NAME "Gruen\0"
 #define INTERFACE_NAME "wlp3s0"
 
 #include <stdint.h>
