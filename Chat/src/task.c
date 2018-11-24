@@ -127,13 +127,13 @@ send_to_server (struct packet* packet, int * sockfd) {
 //		task_to_send.arg = send_args;
 //
 //		Thpool_add_task(Chat_get_sendpool(), task_to_send, 1);
-		if (packet->typ == SIGN_IN) {
-			close(*sockfd);
-		}
-//		close(*sock_fd);
+		close(*sockfd);
 		perror("send_to_server: ");
 		return ;
 	
+	}
+	if (packet->typ == SIGN_IN) {
+		close(*sockfd);
 	}
 
 	return ;
