@@ -20,6 +20,7 @@
 #include "chat.h"
 #include "thpool.h"
 #include "packet.h"
+#include "../libcrc/src/crc32.c"
 
 #define PORT "6100"
 
@@ -85,8 +86,13 @@ send_all_data (struct packet *packet, int *length, int *sockfd) {
 
 	while (total < *length) {
 		n = send(*sockfd, packet+total, bytes_left, 0);
-		if (n == -1)
+		if (n == -1) {
+			struct args_send send_args;
+			send_args.sock_fd = sockfd;
+			send_args.buf = packet;
+			resend_msg(&send_args);
 			break;
+		}
 		total += n;
 		bytes_left -= n;
 	}
@@ -102,31 +108,10 @@ send_to_server (struct packet* packet, int * sockfd) {
 	int length = sizeof(packet);
 
 	if (send_all_data(packet, &length, sockfd) == -1) {
+
 		errno = EPERM;
 		printf("Only send %d bytes\n", length);
 
-		//send failed so we try to connect and send again
-//		struct task task_to_connect;
-//		struct args_connect *connect_args;
-//		struct sockaddr *addr;
-//		socklen_t *addr_length;
-//		char ip_addr[INET_ADDRSTRLEN];
-
-//		getpeername(*sock_fd, addr, addr_length);
-
-//		connect_args->ip = inet_ntop(AF_INET, &(((struct sockaddr_in *)addr)->sin_addr), ip_addr, INET_ADDRSTRLEN);
-//		connect_args->sock_fd = sock_fd;
-
-//		task_to_connect.arg = connect_args;
-//		task_to_connect.routine_for_task = connect_to_server;
-//		Thpool_add_task(Chat_get_sendpool(), task_to_connect, 1);
-//
-//		//task_to_send.arg = _args->;
-//		struct task task_to_send;
-//		task_to_send.routine_for_task = send_to_server;
-//		task_to_send.arg = send_args;
-//
-//		Thpool_add_task(Chat_get_sendpool(), task_to_send, 1);
 		close(*sockfd);
 		perror("send_to_server: ");
 		return ;
@@ -139,6 +124,13 @@ send_to_server (struct packet* packet, int * sockfd) {
 	return ;
 }
 
+void resend_msg(void * arg) {
+	//send failed so we try to connect and send again
+//	struct args_connect conn_args;
+
+	//TODO get_ip
+//	conn_args->ip =
+}
 
 void
 send_sign_in (void * arg) {
@@ -148,32 +140,22 @@ send_sign_in (void * arg) {
 	struct packet packet;
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
-	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + SIZE_OF_HEADER_IN_BYTES);
+	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES));
 	int sock_fd;
 
-	struct args_connect * con_args;
-	con_args->sock_fd = &sock_fd;
-	con_args->ip = ip;
 
-	connect_to_server(con_args);
+	struct args_connect con_args;
+	con_args.ip = ip;
+	con_args.sock_fd = &sock_fd;
+
+	connect_to_server(&con_args);
 
 	uint8_t payload[bufsize];
-	//unsigned char payload[bufsize];
 
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_IN; //type
-	packet.length = htons(num_of_members * SIZE_OF_MEMBER_IN_BYTES);
-	packet.payload = payload;
-
-	//TODO get CRC
-	//uint32_t crc
-	//sign_in_buf[4] = crc & 0xFF000000 >> 24;
-	//sign_in_buf[5] = crc & 0x00FF0000 >> 16;
-	//sign_in_buf[6] = crc & 0x0000FF00 >> 8;
-	//sign_in_buf[7] = crc & 0x000000FF;
-
-
+	packet.length = htons(bufsize);
 
 	int ip_addr_offset;
 	int id_offset;
@@ -195,7 +177,10 @@ send_sign_in (void * arg) {
 		p = p->next;
 	}
 	packet.payload = payload;
+	packet.crc = htonl(crc_32(payload, bufsize));
+
 	send_to_server(&packet, &sock_fd);
+	//TODO put sock_fd in memberlist?
 
 }
 
@@ -208,18 +193,12 @@ send_quit (void * buffer) {
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(ID_LENGTH); //length
-	//TODO get CRC
-	//uint32_t crc
-	//sign_in_buf[4] = crc & 0xFF000000 >> 24;
-	//sign_in_buf[5] = crc & 0x00FF0000 >> 16;
-	//sign_in_buf[6] = crc & 0x0000FF00 >> 8;
-	//sign_in_buf[7] = crc & 0x000000FF;
+	packet.crc = htonl(crc_32("Raupe\0", ID_LENGTH)); //TODO use define???
+	packet.payload = (uint8_t *)ID_NAME;
 
+	//TODO put sends in taskqueue? or send_quit gets called more often in other function?
 	p = p->next;
-
-	packet.payload = (uint8_t *)"ID_NAME";
-	for (i = 0; i < List_no_of_members() - 1; i++){
-
+	for (i = 1; i < List_no_of_members() - 1; i++){
 		send_to_server(&packet, buffer);
 		p = p->next;
 	}
@@ -228,18 +207,18 @@ send_quit (void * buffer) {
 
 void
 send_msg (void * buffer) {
-	char* id = strtok(buffer, " \n\0");
+	uint8_t* id = strtok(buffer, " \n\0");
 	id = ++id; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
-
+	uint16_t bufsize = sizeof(msg);
 	int * sock_fd = List_get_sockfd_by_id(id);
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = MESSAGE; //type
-	packet.length = htonl(sizeof(msg)); //size_t's length can vary :/
+	packet.length = htons(bufsize);
+	packet.crc = htonl(crc_32(msg, bufsize));
 	packet.payload = msg;
-//	packet.crc
 
 	send_to_server(&packet, sock_fd);
 }
@@ -255,12 +234,6 @@ send_member_list (void * buffer) {
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(bufsize); //length
-	//TODO get CRC
-	//uint32_t crc
-	//sign_in_buf[4] = crc & 0xFF000000 >> 24;
-	//sign_in_buf[5] = crc & 0x00FF0000 >> 16;
-	//sign_in_buf[6] = crc & 0x0000FF00 >> 8;
-	//sign_in_buf[7] = crc & 0x000000FF;
 
 	int i;
 	int j;
@@ -279,6 +252,7 @@ send_member_list (void * buffer) {
 		}
 		p = p->next;
 	}
+	packet.crc = htonl(crc_32(payload, bufsize));
 	packet.payload = payload;
 	send_to_server(&packet, buffer);
 }
@@ -286,12 +260,15 @@ send_member_list (void * buffer) {
 void
 send_error(void *buffer) {
 	uint8_t * payload = (uint8_t *)"Error";
+	uint16_t string_length = 5;
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = ERROR; //type
-	packet.length = htons(5); //length
+	packet.length = htons(string_length); //length
+	packet.crc = crc_32(payload, string_length);
 	packet.payload = payload;
+
 
 	send_to_server(&packet, buffer);
 }
