@@ -172,8 +172,10 @@ send_sign_in (void * arg) {
 	int id_offset;
 
 	//set content of member list
+	uint8_t length_in_byte = (uint8_t)num_of_members;
+	payload[0] = length_in_byte;
 	for(i = 0; i < num_of_members; i++) {
-		ip_addr_offset = i * SIZE_OF_MEMBER_IN_BYTES;
+		ip_addr_offset = i * SIZE_OF_MEMBER_IN_BYTES + 1;
 		//store in network byteorder
 		payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
 		payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
@@ -255,8 +257,9 @@ send_member_list (void * buffer) {
 	int j;
 	int member_offset;
 	int ip_addr_offset = sizeof(uint32_t);
+	payload[0] = (uint8_t)num_of_members;
 	for(i = 0; i < num_of_members; i++) {
-		member_offset = i * SIZE_OF_MEMBER_IN_BYTES;
+		member_offset = i * SIZE_OF_MEMBER_IN_BYTES + 1;
 		payload[member_offset + 0] = (p->ip & 0xFF000000) >> 24;
 		payload[member_offset + 1] = (p->ip & 0x00FF0000) >> 16;
 		payload[member_offset + 2] = (p->ip & 0x0000FF00) >> 8;

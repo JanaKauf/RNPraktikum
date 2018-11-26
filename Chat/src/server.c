@@ -85,7 +85,7 @@ Server_init(void) {
 
 	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
 
-	if (List_init("ID_NAME", my_ip->sin_addr.s_addr) != 0) {
+	if (List_init(ID_NAME, my_ip->sin_addr.s_addr) != 0) {
 		return -1;
 	}
 
