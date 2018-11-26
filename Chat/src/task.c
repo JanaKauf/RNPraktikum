@@ -32,6 +32,8 @@ connect_to_server (char * ip, int * sockfd) {
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
 
+	ip = "141.22.27.31";
+
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
@@ -144,7 +146,7 @@ void
 send_sign_in (void * arg) {
 	int i;
 	int j;
-	char * ip = (char *)arg;
+	char * ip = "141.22.27.31";
 	printf("ip: %s, arg: %s\n", ip, (char *)arg);
 	struct packet packet;
 	struct member *p = List_get_list();

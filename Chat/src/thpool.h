@@ -3,7 +3,7 @@
 //#include "taskqueue.h"
 #include <pthread.h>
 
-#define NUM_THREADS 3
+#define NUM_THREADS 1
 #define NUM_TASKS	10
 
 struct task_t {

@@ -73,14 +73,16 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
 		if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_lock");
 
-		while (pool->counter == NUM_TASKS) {
-			pthread_cond_wait(&(pool->cond), &(pool->mutex));	
-		}
+//		while (pool->counter == NUM_TASKS) {
+//			if ((errno =pthread_cond_wait(&(pool->cond), &(pool->mutex))) != 0)
+//				perror("thpool: pthread_cond_wait");
+//		}
 
 		pool->tasks = new;
 		pool->counter++;
 
-		pthread_cond_broadcast(&(pool->cond));
+		if ((pthread_cond_signal(&(pool->cond))) != 0)
+			perror("thpool: pthread_cond_broadcast");
 
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
@@ -89,21 +91,24 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
 
 	struct task_t *p;
 
-	for (p = pool->tasks; p->next != NULL; p = p->next) {
-	
-	}
 
 	if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 		perror("thpool: pthread_mutex_lock");
 
-	while (pool->counter == NUM_TASKS) {
-		pthread_cond_wait(&(pool->cond), &(pool->mutex));	
+//	while (pool->counter == NUM_TASKS) {
+//		if ((errno =pthread_cond_wait(&(pool->cond), &(pool->mutex))) != 0)
+//			perror("thpool: pthread_cond_wait");
+//	}
+
+	for (p = pool->tasks; p->next != NULL; p = p->next) {
+	
 	}
 
 	p->next = new;
 	pool->counter++;
 	
-	pthread_cond_broadcast(&(pool->cond));
+	if ((pthread_cond_signal(&(pool->cond))) != 0)
+		perror("thpool: pthread_cond_broadcast");
 
 	if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 		perror("thpool: pthread_mutex_unlock");
@@ -125,7 +130,9 @@ Thpool_routine(void *threadpool) {
 			perror("thpool: pthread_mutex_lock");
 
 		while (pool->counter == 0) {
-			pthread_cond_wait(&(pool->cond), &(pool->mutex));
+			if ((errno =pthread_cond_wait(&(pool->cond), &(pool->mutex))) != 0)
+				perror("thpool: pthread_cond_wait");
+
 		}
 
 		first = pool->tasks;
@@ -135,12 +142,13 @@ Thpool_routine(void *threadpool) {
 		pool->tasks = pool->tasks->next;
 		pool->counter--;
 
-		pthread_cond_broadcast(&(pool->cond));
+//		if ((pthread_cond_signal(&(pool->cond))) != 0)
+//			perror("thpool: pthread_cond_broadcast");
 
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
 
-		printf("%s......................\n", (char *)job.arg);
+		printf("\t\t\t\t\t\t\t\t\t\t%s......................\n", (char *)job.arg);
         (*(job.routine_for_task))(job.arg);
 
 		free(first);
