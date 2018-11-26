@@ -26,6 +26,12 @@ Thpool_create() {
 
     pool->tasks = NULL;
 
+	pool->counter = 0;
+
+
+	if ((errno = pthread_cond_init(&(pool->cond), NULL)) != 0)
+	   perror("thpool: pthread_mutex_init");	
+
 	if ((errno = pthread_mutex_init(&(pool->mutex), NULL)) != 0)
 	   perror("thpool: pthread_mutex_init");	
 
@@ -67,7 +73,14 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
 		if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_lock");
 
+		while (pool->counter == NUM_TASKS) {
+			pthread_cond_wait(&(pool->cond), &(pool->mutex));	
+		}
+
 		pool->tasks = new;
+		pool->counter++;
+
+		pthread_cond_broadcast(&(pool->cond));
 
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
@@ -83,7 +96,14 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
 	if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 		perror("thpool: pthread_mutex_lock");
 
+	while (pool->counter == NUM_TASKS) {
+		pthread_cond_wait(&(pool->cond), &(pool->mutex));	
+	}
+
 	p->next = new;
+	pool->counter++;
+	
+	pthread_cond_broadcast(&(pool->cond));
 
 	if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 		perror("thpool: pthread_mutex_unlock");
@@ -100,17 +120,22 @@ Thpool_routine(void *threadpool) {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
     while(true) {
-		first = pool->tasks;
-		if (first == NULL) {
-			continue;
-		}
-
-		job = *first;
 
 		if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_lock");
 
+		while (pool->counter == 0) {
+			pthread_cond_wait(&(pool->cond), &(pool->mutex));
+		}
+
+		first = pool->tasks;
+
+		job = *first;
+
 		pool->tasks = pool->tasks->next;
+		pool->counter--;
+
+		pthread_cond_broadcast(&(pool->cond));
 
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
@@ -179,6 +204,7 @@ Thpool_free (struct threadpool *pool) {
         free(pool->threads);
 		if((errno = pthread_mutex_destroy(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_destroy");
+		pthread_cond_destroy(&(pool->cond));
     }
 
     free(pool);

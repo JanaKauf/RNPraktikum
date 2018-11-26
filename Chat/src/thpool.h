@@ -3,7 +3,7 @@
 //#include "taskqueue.h"
 #include <pthread.h>
 
-#define NUM_THREADS 10
+#define NUM_THREADS 3
 #define NUM_TASKS	10
 
 struct task_t {
@@ -13,9 +13,11 @@ struct task_t {
 };
 
 struct threadpool {
-    pthread_mutex_t mutex;
-    pthread_t *threads;
-    struct task_t *tasks;
+    pthread_mutex_t		mutex;
+    pthread_t			*threads;
+	pthread_cond_t		cond;
+	int					counter;
+    struct task_t		*tasks;
 };
 
 extern struct threadpool* Thpool_create();
