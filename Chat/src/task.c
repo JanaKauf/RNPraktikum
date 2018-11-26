@@ -108,8 +108,8 @@ send_to_server (struct packet* packet, int * sockfd) {
 		struct args_send send_args;
 		send_args.sock_fd = sockfd;
 		send_args.buf = packet;
-		resend_msg(&send_args);
-		printf("üacket couldnt be send");
+		resend_packet(&send_args);
+
 
 		errno = EPERM;
 		printf("Only send %d bytes\n", length);
@@ -133,7 +133,7 @@ void resend_packet(void * arg) {
 	struct args_connect conn_args;
 	struct member* p = List_get_list();
 
-	conn_args->ip = List_get_ip_by_sockfd(*send_args->sock_fd);
+	conn_args.ip = (List_get_ip_by_sockfd(*send_args->sock_fd))->ip;
 	connect_to_server(&conn_args);
 
 	if(send(*conn_args.sock_fd, send_args->buf, sizeof(*send_args->buf), 0) < 0) {
@@ -197,7 +197,7 @@ send_sign_in (void * arg) {
 
 void
 send_quit (void * args) {
-	struct args_send send_args = args;
+	struct args_send* send_args = args;
 	int i;
 	struct packet packet;
 	//header of member list
@@ -210,7 +210,7 @@ send_quit (void * args) {
 //	TODO put sends in taskqueue? or send_quit gets called more often in other function?
 //	struct member *p = List_get_list();
 
-	send_to_server(&packet, &send_args.sock_fd);
+	send_to_server(&packet, send_args->sock_fd);
 
 //	p = p->next;
 //
