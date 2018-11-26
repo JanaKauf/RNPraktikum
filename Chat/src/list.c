@@ -39,7 +39,7 @@ List_init (uint8_t id[16], uint32_t ip) {
 }
 
 int
-List_new_member (uint8_t id[16], uint32_t ip, int *sockfd) {
+List_new_member (uint8_t id[16], uint32_t ip) {
 	member_t *new_member = NULL;
 	member_t *p;
 
@@ -61,10 +61,11 @@ List_new_member (uint8_t id[16], uint32_t ip, int *sockfd) {
 	if (new_member == NULL) {
 		errno = ENOMEM;
 		return -1;
-	} 
-	memcpy(list->id, id, strlen(id)+1);
+	}
+
+	strcpy(list->id, id);
 	new_member->ip = ip;
-	new_member->sock_fd = sockfd;
+	new_member->sock_fd = NULL;
 	new_member->next = NULL;
 
 	p->next = new_member;

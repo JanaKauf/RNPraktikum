@@ -6,8 +6,7 @@
 extern int Thrsafe_init(void);
 
 extern int Thrsafe_new_member(uint8_t id[16],
-							uint32_t ip,
-							int * sockfd);
+							uint32_t ip);
 
 extern int Thrsafe_delete_member_id (uint8_t id[16]);
 

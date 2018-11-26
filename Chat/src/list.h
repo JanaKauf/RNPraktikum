@@ -19,8 +19,7 @@ typedef struct member {
 extern int List_init (uint8_t id[16], uint32_t ip);
 
 extern int List_new_member (uint8_t id[16],
-		const uint32_t ip,
-		int *sockfd);
+		const uint32_t ip);
 
 extern struct member List_search_member_id (uint8_t id[16]);
 

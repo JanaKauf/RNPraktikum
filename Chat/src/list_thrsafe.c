@@ -15,12 +15,12 @@ Thrsafe_init (void) {
 }
 
 int
-Thrsafe_new_member(uint8_t id[16], uint32_t ip, int * sockfd) {
+Thrsafe_new_member(uint8_t id[16], uint32_t ip) {
 	int err = 0;
 
 	pthread_mutex_lock(&mutex);
 
-	err = List_new_member(id, ip, sockfd);
+	err = List_new_member(id, ip);
 
 	pthread_mutex_unlock(&mutex);
 

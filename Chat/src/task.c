@@ -293,7 +293,6 @@ recv_sign_in (uint8_t * buffer,
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
 	uint8_t *id;
-	int * sock_fd;
 
 	struct threadpool * send_pool;
 	send_pool = Chat_get_sendpool();
@@ -304,11 +303,6 @@ recv_sign_in (uint8_t * buffer,
 	job.routine_for_task = send_member_list;
 	job.arg = sockfd;
 	Thpool_add_task(send_pool, job);
-
-//	int *sock_fd;
-
-//	struct args_connect c_args;
-//	struct in_addr i_ip;
 
 	int offset = 0;
 
@@ -322,12 +316,7 @@ recv_sign_in (uint8_t * buffer,
 		
 		i_ip.s_addr = ip;
 
-		if (i != 0) {
-			connect_to_server(inet_ntoa(i_ip), sock_fd);
-			sockfd = sock_fd;
-		}
-
-		if (Thrsafe_new_member(id, ip, sockfd) != 0) {
+		if (Thrsafe_new_member(id, ip) != 0) {
 			printf("task: recv_member_list fail to add id %s\n", id);
 		
 		}
