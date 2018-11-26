@@ -180,7 +180,6 @@ List_print (void) {
 		ip_addr.s_addr = p->ip;
 		printf("id\t\t%s\n", p->id);
 		printf("ip\t\t%s\n", inet_ntoa(ip_addr));
-		printf("sockfd\t\t%d\n", p->sock_fd);
 		printf("\n");
 	}
 

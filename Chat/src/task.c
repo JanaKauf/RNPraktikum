@@ -152,7 +152,6 @@ send_sign_in (void * arg) {
 
 	connect_to_server(ip, &sock_fd);
 
-	uint8_t payload[bufsize];
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -236,8 +235,7 @@ void
 send_member_list (void * buffer) {
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
-	uint16_t bufsize = num_of_members * SIZE_OF_MEMBER_IN_BYTES;
-	uint8_t payload[bufsize];
+	uint16_t bufsize = (num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
@@ -246,25 +244,31 @@ send_member_list (void * buffer) {
 
 	int i;
 	int j;
-	int member_offset;
-	int ip_addr_offset = sizeof(uint32_t);
-	payload[0] = (uint8_t)num_of_members;
+
+	int ip_addr_offset = 1;
+	int id_offset;
+
+	//set content of member list
+	uint8_t length_in_byte = (uint8_t)num_of_members;
+	packet.payload[0] = length_in_byte;
 	for(i = 0; i < num_of_members; i++) {
-		member_offset = i * SIZE_OF_MEMBER_IN_BYTES + 1;
-		payload[member_offset + 0] = (p->ip & 0xFF000000) >> 24;
-		payload[member_offset + 1] = (p->ip & 0x00FF0000) >> 16;
-		payload[member_offset + 2] = (p->ip & 0x0000FF00) >> 8;
-		payload[member_offset + 3] = (p->ip & 0x000000FF);
+		//store in network byteorder
+		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
+		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
+		packet.payload[2 + ip_addr_offset] = (p->ip & 0x0000FF00) >> 8;
+		packet.payload[3 + ip_addr_offset] = (p->ip & 0x000000FF);
 
-
-		for(j = ip_addr_offset + member_offset; j < member_offset + SIZE_OF_HEADER_IN_BYTES; j++) {
-			payload[j] = p->id[j];
+		id_offset = 4 + ip_addr_offset;
+		for(j = 0; j < ID_LENGTH; j++) {
+			packet.payload[id_offset + j] = p->id[j];
 		}
+
+		ip_addr_offset += SIZE_OF_MEMBER_IN_BYTES;
 		p = p->next;
 	}
-	packet.crc = htonl(crc_32(payload, bufsize));
-//	packet.payload = payload;
-	send_to_server(&packet, buffer);
+	packet.crc = htonl(crc_32(packet.payload, bufsize));
+
+	send_to_server(&packet, (int *)buffer);
 }
 
 void
