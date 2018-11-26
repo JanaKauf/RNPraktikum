@@ -28,11 +28,8 @@
 //###################CONNECT_TASKS#######################
 void
 connect_to_server (char * ip, int * sockfd) {
-	int sock_fd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
-
-	ip = "141.22.27.31";
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
@@ -44,13 +41,13 @@ connect_to_server (char * ip, int * sockfd) {
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
-		if((sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if((*sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("client: socket");
 			continue;
 		}
 
-		if(connect(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sock_fd);
+		if(connect(*sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(*sockfd);
 			perror("client: connect");
 			continue;
 		}
@@ -65,7 +62,6 @@ connect_to_server (char * ip, int * sockfd) {
 		return ;
 	}
 	//TODO put sockfd in member list
-	sockfd = &sock_fd;
 
 }
 
@@ -103,7 +99,7 @@ send_all_data (struct packet *packet, int *length, int *sockfd) {
 void
 send_to_server (struct packet* packet, int * sockfd) {
 //	struct args_send *send_args = args;
-	int length = sizeof(packet);
+	int length = sizeof(struct packet);
 
 	if (send_all_data(packet, &length, sockfd) == -1) {
 		struct args_send send_args;
@@ -146,12 +142,12 @@ void
 send_sign_in (void * arg) {
 	int i;
 	int j;
-	char * ip = "141.22.27.31";
+	char * ip = "141.22.88.84";
 	printf("ip: %s, arg: %s\n", ip, (char *)arg);
 	struct packet packet;
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
-	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES));
+	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1);
 	int sock_fd;
 
 	connect_to_server(ip, &sock_fd);
@@ -163,29 +159,29 @@ send_sign_in (void * arg) {
 	packet.typ = SIGN_IN; //type
 	packet.length = htons(bufsize);
 
-	int ip_addr_offset;
+
+	int ip_addr_offset = 1;
 	int id_offset;
 
 	//set content of member list
 	uint8_t length_in_byte = (uint8_t)num_of_members;
-	payload[0] = length_in_byte;
+	packet.payload[0] = length_in_byte;
 	for(i = 0; i < num_of_members; i++) {
-		ip_addr_offset = i * SIZE_OF_MEMBER_IN_BYTES + 1;
 		//store in network byteorder
-		payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
-		payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
-		payload[2 + ip_addr_offset] = (p->ip & 0x0000FF00) >> 8;
-		payload[3 + ip_addr_offset] = (p->ip & 0x000000FF);
+		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
+		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
+		packet.payload[2 + ip_addr_offset] = (p->ip & 0x0000FF00) >> 8;
+		packet.payload[3 + ip_addr_offset] = (p->ip & 0x000000FF);
 
 		id_offset = 4 + ip_addr_offset;
 		for(j = 0; j < ID_LENGTH; j++) {
-			payload[id_offset + j] = p->id[j];
+			packet.payload[id_offset + j] = p->id[j];
 		}
 
+		ip_addr_offset += SIZE_OF_MEMBER_IN_BYTES;
 		p = p->next;
 	}
-	packet.payload = payload;
-	packet.crc = htonl(crc_32(payload, bufsize));
+	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
 	send_to_server(&packet, &sock_fd);
 	//TODO put sock_fd in memberlist?
@@ -201,8 +197,8 @@ send_quit (void * args) {
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(ID_LENGTH); //length
-	packet.crc = htonl(crc_32("Raupe\0", ID_LENGTH)); //TODO use define???
-	packet.payload = (uint8_t *)ID_NAME;
+	packet.crc = htonl(crc_32(ID_NAME, ID_LENGTH)); //TODO use define???
+//	packet.payload = ()ID_NAME;
 
 //	TODO put sends in taskqueue? or send_quit gets called more often in other function?
 //	struct member *p = List_get_list();
@@ -231,7 +227,7 @@ send_msg (void * buffer) {
 	packet.typ = MESSAGE; //type
 	packet.length = htons(bufsize);
 	packet.crc = htonl(crc_32(msg, bufsize));
-	packet.payload = msg;
+//	packet.payload = msg;
 
 	send_to_server(&packet, sock_fd);
 }
@@ -267,7 +263,7 @@ send_member_list (void * buffer) {
 		p = p->next;
 	}
 	packet.crc = htonl(crc_32(payload, bufsize));
-	packet.payload = payload;
+//	packet.payload = payload;
 	send_to_server(&packet, buffer);
 }
 
@@ -281,7 +277,7 @@ send_error(void *buffer) {
 	packet.typ = ERROR; //type
 	packet.length = htons(string_length); //length
 	packet.crc = crc_32(payload, string_length);
-	packet.payload = payload;
+//	packet.payload = payload;
 
 
 	send_to_server(&packet, buffer);

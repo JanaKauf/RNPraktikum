@@ -6,7 +6,7 @@ typedef struct packet {
 	uint8_t typ;
 	uint16_t length;
 	uint32_t crc;
-	uint8_t *payload;
+	uint8_t payload[20 * 20];
 
 }packet_t;
 
