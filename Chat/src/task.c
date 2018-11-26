@@ -441,9 +441,13 @@ recv_from_client (void *sockfd) {
 	} else {
 		type = pck.typ;
 
+		printf("type: %u\n", type);
+
 		length = ntohs(pck.length);
+		printf("length: %u\n", length);
 
 		crc = ntohl(pck.crc);
+		printf("crc: %u\n", crc);
 
 		num_bytes -= 8;
 
@@ -457,20 +461,20 @@ recv_from_client (void *sockfd) {
 				
 		switch (type) {
 			case SIGN_IN:
-				recv_sign_in(payload, client_ip.sin_addr.s_addr, new_fd);
+				recv_sign_in(pck.payload, client_ip.sin_addr.s_addr, new_fd);
 				break;
 			case SIGN_OUT:
 				close(*new_fd);
-				recv_quit(payload);
+				recv_quit(pck.payload);
 				break;
 			case MEMBER_LIST:
-				recv_member_list(payload, new_fd);
+				recv_member_list(pck.payload, new_fd);
 				break;
 			case MESSAGE:
-				recv_msg(payload, client_ip.sin_addr.s_addr);
+				recv_msg(pck.payload, client_ip.sin_addr.s_addr);
 				break;
 			case ERROR:
-				recv_error(payload, client_ip.sin_addr.s_addr);
+				recv_error(pck.payload, client_ip.sin_addr.s_addr);
 				break;
 			default:
 				printf("server_thread: error type!\n");
