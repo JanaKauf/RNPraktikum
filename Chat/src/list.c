@@ -51,13 +51,9 @@ List_new_member (uint8_t id[16], uint32_t ip, int *sockfd) {
 
 	for (p = list; p->next != NULL; p = p->next){
 		if ((strncmp(id, p->id, 16)) == 0) {
-			break;
+			errno = EPERM;
+			return -1;
 		}
-	}
-
-	if (p != NULL) {
-		errno = EPERM;
-		return -1;
 	}
 
 	new_member = malloc(sizeof(member_t));
@@ -71,9 +67,7 @@ List_new_member (uint8_t id[16], uint32_t ip, int *sockfd) {
 	new_member->sock_fd = sockfd;
 	new_member->next = NULL;
 
-	for (p = list; p != NULL; p = p->next);
-
-	p = new_member;
+	p->next = new_member;
 	counter++;
 
 	return 0;
