@@ -71,8 +71,9 @@ connect_to_server (void *args) {
 void
 disconnect_from_server (void * sockfd) {
 	int * sock_fd = sockfd;
-	close(*sock_fd);
-
+	if(close(*sock_fd) < 0) {
+		perror("disconnect_from_server: ");
+	}
 }
 
 //######################SEND_TASKS###############################
@@ -87,10 +88,6 @@ send_all_data (struct packet *packet, int *length, int *sockfd) {
 	while (total < *length) {
 		n = send(*sockfd, packet+total, bytes_left, 0);
 		if (n == -1) {
-			struct args_send send_args;
-			send_args.sock_fd = sockfd;
-			send_args.buf = packet;
-			resend_msg(&send_args);
 			break;
 		}
 		total += n;
@@ -108,6 +105,11 @@ send_to_server (struct packet* packet, int * sockfd) {
 	int length = sizeof(packet);
 
 	if (send_all_data(packet, &length, sockfd) == -1) {
+		struct args_send send_args;
+		send_args.sock_fd = sockfd;
+		send_args.buf = packet;
+		resend_msg(&send_args);
+		printf("üacket couldnt be send");
 
 		errno = EPERM;
 		printf("Only send %d bytes\n", length);
@@ -124,12 +126,21 @@ send_to_server (struct packet* packet, int * sockfd) {
 	return ;
 }
 
-void resend_msg(void * arg) {
+void resend_packet(void * arg) {
 	//send failed so we try to connect and send again
-//	struct args_connect conn_args;
+	struct args_send* send_args = arg;
 
-	//TODO get_ip
-//	conn_args->ip =
+	struct args_connect conn_args;
+	struct member* p = List_get_list();
+
+	conn_args->ip = List_get_ip_by_sockfd(*send_args->sock_fd);
+	connect_to_server(&conn_args);
+
+	if(send(*conn_args.sock_fd, send_args->buf, sizeof(*send_args->buf), 0) < 0) {
+		perror("resend_packet: ");
+	}
+
+	disconnect_from_server(*conn_args.sock_fd);
 }
 
 void
@@ -185,9 +196,9 @@ send_sign_in (void * arg) {
 }
 
 void
-send_quit (void * buffer) {
+send_quit (void * args) {
+	struct args_send send_args = args;
 	int i;
-	struct member *p = List_get_list();
 	struct packet packet;
 	//header of member list
 	packet.version = VERSION; //version
@@ -196,12 +207,17 @@ send_quit (void * buffer) {
 	packet.crc = htonl(crc_32("Raupe\0", ID_LENGTH)); //TODO use define???
 	packet.payload = (uint8_t *)ID_NAME;
 
-	//TODO put sends in taskqueue? or send_quit gets called more often in other function?
-	p = p->next;
-	for (i = 1; i < List_no_of_members() - 1; i++){
-		send_to_server(&packet, buffer);
-		p = p->next;
-	}
+//	TODO put sends in taskqueue? or send_quit gets called more often in other function?
+//	struct member *p = List_get_list();
+
+	send_to_server(&packet, &send_args.sock_fd);
+
+//	p = p->next;
+//
+//	for (i = 1; i < List_no_of_members() - 1; i++){
+//		send_to_server(&packet, buffer);
+//		p = p->next;
+//	}
 
 }
 

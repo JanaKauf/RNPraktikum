@@ -24,7 +24,7 @@ struct args_send{
 };
 
 extern void send_sign_in (void * buffer);
-extern void send_quit(void * buff);
+extern void send_quit(void * args);
 extern void send_msg(void * buff);
 extern void send_member_list(void * buff);
 extern void send_error(void *buff);

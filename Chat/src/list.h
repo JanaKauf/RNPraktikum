@@ -36,6 +36,8 @@ extern int* List_get_sockfd_by_ip (uint32_t ip);
 
 extern int* List_get_sockfd_by_id (uint8_t id[16]);
 
+extern struct member* List_get_ip_by_sockfd(int sockfd);
+
 extern int List_no_of_members (void);
 
 extern struct member * List_get_list(void);

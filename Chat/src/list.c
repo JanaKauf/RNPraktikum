@@ -135,7 +135,7 @@ List_delete_member (uint8_t id[16]) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if (strncmp(p->id, id, 16)) {
+		if (strncmp(p->id, id, 16) == 0) {
 			del_member = p;
 		}
 	}
@@ -206,7 +206,7 @@ List_get_sockfd_by_id (uint8_t id[16]) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if (strncmp(p->id, id, 16)) {
+		if (strncmp(p->id, id, 16) == 0) {
 			break;
 		}
 	}
@@ -241,6 +241,24 @@ List_get_sockfd_by_ip (uint32_t ip) {
 	return NULL;
 	
 }
+
+struct member* List_get_ip_by_sockfd(int sockfd) {
+	member_t *p = NULL;
+
+	if (list == NULL) {
+		errno = EADDRNOTAVAIL;
+		return NULL;
+	}
+
+	for (p = list; p->next != NULL; p = p->next){
+		if (*p->sock_fd == sockfd) {
+			break;
+		}
+	}
+
+	return p;
+}
+
 
 int
 List_no_of_members(void) {
