@@ -27,8 +27,7 @@
 
 //###################CONNECT_TASKS#######################
 void
-connect_to_server (void *args) {
-	struct args_connect *connect_args = (struct args_connect *)args;
+connect_to_server (char * ip, int * sockfd) {
 	int sock_fd;
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
@@ -37,7 +36,7 @@ connect_to_server (void *args) {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if((errno = getaddrinfo(connect_args->ip, PORT, &hints, &servlist)) != 0) {
+	if((errno = getaddrinfo(ip, PORT, &hints, &servlist)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errno));
 		return ;
 	}
@@ -64,12 +63,12 @@ connect_to_server (void *args) {
 		return ;
 	}
 	//TODO put sockfd in member list
-	connect_args->sock_fd = &sock_fd;
+	sockfd = &sock_fd;
 
 }
 
 void
-disconnect_from_server (void * sockfd) {
+disconnect_from_server (int * sockfd) {
 	int * sock_fd = sockfd;
 	if(close(*sock_fd) < 0) {
 		perror("disconnect_from_server: ");
@@ -108,7 +107,7 @@ send_to_server (struct packet* packet, int * sockfd) {
 		struct args_send send_args;
 		send_args.sock_fd = sockfd;
 		send_args.buf = packet;
-		resend_packet(&send_args);
+//		resend_packet(&send_args);
 
 
 		errno = EPERM;
@@ -130,17 +129,15 @@ void resend_packet(void * arg) {
 	//send failed so we try to connect and send again
 	struct args_send* send_args = arg;
 
-	struct args_connect conn_args;
 	struct member* p = List_get_list();
 
-	conn_args.ip = (List_get_ip_by_sockfd(*send_args->sock_fd))->ip;
-	connect_to_server(&conn_args);
+//	connect_to_server(List_get_ip_by_sockfd(*send_args->sock_fd))->ip);
 
-	if(send(*conn_args.sock_fd, send_args->buf, sizeof(*send_args->buf), 0) < 0) {
-		perror("resend_packet: ");
-	}
+//	if(send(*conn_args.sock_fd, send_args->buf, sizeof(*send_args->buf), 0) < 0) {
+//		perror("resend_packet: ");
+//	}
 
-	disconnect_from_server(*conn_args.sock_fd);
+//	disconnect_from_server(&sock_fd);
 }
 
 void
@@ -159,7 +156,7 @@ send_sign_in (void * arg) {
 	con_args.ip = ip;
 	con_args.sock_fd = &sock_fd;
 
-	connect_to_server(&con_args);
+	connect_to_server(ip, &sock_fd);
 
 	uint8_t payload[bufsize];
 

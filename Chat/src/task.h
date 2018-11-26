@@ -14,8 +14,8 @@ struct args_connect{
 	int * sock_fd;
 };
 
-extern void connect_to_server (void*);
-extern void disconnect_from_server (void * sockfd);
+extern void connect_to_server (char *ip, int * sockfd);
+extern void disconnect_from_server (int * sockfd);
 
 //###################SEND_TASKS#######################
 struct args_send{
