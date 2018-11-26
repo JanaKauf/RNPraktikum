@@ -1,22 +1,27 @@
 #ifndef _THPOOL_H
 #define _THPOOL_H
-#include "taskqueue.h"
+//#include "taskqueue.h"
 #include <pthread.h>
 
 #define NUM_THREADS 10
 #define NUM_TASKS	10
 
-struct threadpool {
-    pthread_mutex_t mutex;
-    pthread_t * threads;
-    mqd_t taskqueue;
+struct task_t {
+	void (*routine_for_task)(void *);
+	void *arg;
+	struct task_t *next;
 };
 
-extern struct threadpool* Thpool_create(mqd_t taskqueue);
+struct threadpool {
+    pthread_mutex_t mutex;
+    pthread_t *threads;
+    struct task_t *tasks;
+};
+
+extern struct threadpool* Thpool_create();
 
 extern int Thpool_add_task(struct threadpool *pool,
-							struct task job,
-							int prio);
+							struct task_t job);
 
 void * Thpool_routine(void *threadpool);
 

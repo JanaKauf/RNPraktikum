@@ -4,11 +4,11 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <errno.h>
-#include "taskqueue.h"
+//#include "taskqueue.h"
 #include "thpool.h"
 
 struct threadpool *
-Thpool_create(const mqd_t taskqueue) {
+Thpool_create() {
     int i;
     struct threadpool *pool;
 
@@ -24,7 +24,7 @@ Thpool_create(const mqd_t taskqueue) {
         goto err;
     }
 
-    pool->taskqueue = taskqueue;
+    pool->tasks = NULL;
 
 	if ((errno = pthread_mutex_init(&(pool->mutex), NULL)) != 0)
 	   perror("thpool: pthread_mutex_init");	
@@ -51,22 +51,42 @@ Thpool_create(const mqd_t taskqueue) {
 }
 
 int
-Thpool_add_task (struct threadpool *pool, const struct task job,
-					const int prio) {
+Thpool_add_task (struct threadpool *pool, const struct task_t job) {
     if (pool == NULL) {
         errno = EADDRNOTAVAIL;
         perror("Invalid Pool");
         return errno;
     }
 
+	struct task_t *new = malloc(sizeof(struct task_t));
+	new->routine_for_task = job.routine_for_task;
+	new->arg = job.arg;
+	new->next = NULL;
+
+	if (pool->tasks == NULL) {
+		if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
+			perror("thpool: pthread_mutex_lock");
+
+		pool->tasks = new;
+
+		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
+			perror("thpool: pthread_mutex_unlock");
+		return 0;	
+	}
+
+	struct task_t *p;
+
+	for (p = pool->tasks; p->next != NULL; p = p->next) {
+	
+	}
+
 	if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 		perror("thpool: pthread_mutex_lock");
 
+	p->next = new;
+
 	if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 		perror("thpool: pthread_mutex_unlock");
-
-	if((errno = Taskqueue_send(pool->taskqueue, job, prio, true)) != 0)
-		perror("thpool: sendToTaskQueue");
 
     return 0;
 }
@@ -74,21 +94,31 @@ Thpool_add_task (struct threadpool *pool, const struct task job,
 void *
 Thpool_routine(void *threadpool) {
     struct threadpool *pool = (struct threadpool *) threadpool;
-    struct task job;
+	struct task_t *first;
+    struct task_t job;
 
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
     while(true) {
+		first = pool->tasks;
+		if (first == NULL) {
+			continue;
+		}
+
+		job = *first;
 
 		if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_lock");
 
+		pool->tasks = pool->tasks->next;
+
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
 
-        job = Taskqueue_receive(pool->taskqueue);
-
+		printf("%s......................\n", (char *)job.arg);
         (*(job.routine_for_task))(job.arg);
+
+		free(first);
 
     }
 
@@ -124,8 +154,6 @@ Thpool_destroy(struct threadpool *pool) {
 		if((errno = pthread_cancel(pool->threads[i])) != 0)
 			perror("thpool: pthread_cancel");
     }
-
-    Taskqueue_close(pool->taskqueue);
 
     for (i = 0; i < NUM_THREADS; i++) {
 		if ((errno = pthread_join(pool->threads[i], NULL)))

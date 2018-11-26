@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "server.h"
-#include "taskqueue.h"
+//#include "taskqueue.h"
 #include "thpool.h"
 #include "task.h"
 #include "list.h"
@@ -13,10 +13,6 @@
 
 pthread_t serv_thread;
 pthread_t cmd_control;
-
-mqd_t task_recv;
-mqd_t task_send;
-mqd_t task_connection;
 
 struct threadpool *recv_pool;
 struct threadpool *send_pool;
@@ -35,13 +31,14 @@ Cmd_routine (void *args ) {
 	char msg[1024] = "";
 	char *cmd = "";
 
-	struct task job;
+	struct task_t job;
+
+	char * ip;
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcancelstate(PTHREAD_CANCEL_DEFERRED, NULL);
 	while(1) {
 		memset(msg, 0, 1024);
-//		get_string(1, msg);
 		fflush(stdin);
 		fgets(msg, 1024, stdin);
 
@@ -53,16 +50,18 @@ Cmd_routine (void *args ) {
 
 		if (msg[0] == '@') {
 			job.routine_for_task = send_msg;
-			Thpool_add_task(send_pool, job, 1);
+			Thpool_add_task(send_pool, job);
 		
 		} else {
 
 			cmd = strtok(msg, " ");
 
 			if (strncmp(cmd, "/connect", 8) == 0) {
-				job.arg = strtok(NULL, "\n");
+				ip = strtok(NULL, "\n");
 				job.routine_for_task = send_sign_in;
-				Thpool_add_task(send_pool, job, 1);
+				job.arg = ip;
+				printf("arg: %s\n", job.arg);
+				Thpool_add_task(send_pool, job);
 		
 			} else if (strncmp(cmd, "/quit", 5) == 0) {
 				//job.routine_for_task = send_quit;
@@ -87,28 +86,20 @@ Cmd_routine (void *args ) {
 int
 main (int argc, char *argv[]) {
 
-	printf("-- Creating Task Queues...\n");
-
-	task_recv = Taskqueue_create("/TASK_RECV", NUM_TASKS);
-	task_send = Taskqueue_create("/TASK_SEND", NUM_TASKS);
-	task_connection = Taskqueue_create("/TASK_CONNECTION", NUM_TASKS);
-
 	printf("-- Creating member_list...\n");
 
 	if (Thrsafe_init() != 0) {
-		goto taskfree;	
 	}
 
 	printf("-- Creating thpool - RECV...\n");
 
-	if ((recv_pool = Thpool_create(task_recv)) == NULL) {
+	if ((recv_pool = Thpool_create()) == NULL) {
 		printf("main: recv_pool = create - fail");
-		goto taskfree;
 	}
 
 	printf("-- Creating thpool - SEND...\n");
 
-	if ((send_pool = Thpool_create(task_send)) == NULL) {
+	if ((send_pool = Thpool_create()) == NULL) {
 		printf("main: send_pool = create - fail");
 		goto recvfree;
 	}
@@ -129,16 +120,15 @@ main (int argc, char *argv[]) {
 
 	Thrsafe_clean();
 
+	Thpool_destroy(recv_pool);
+	Thpool_destroy(send_pool);
+
 	sendfree:
 		Thpool_destroy(send_pool);
 		Thpool_free(send_pool);
 	recvfree:
 		Thpool_destroy(recv_pool);
 		Thpool_free(recv_pool);
-	taskfree:
-		Taskqueue_destroy("/TASK_RECV");
-		Taskqueue_destroy("/TASK_CONNECTION");
-		Taskqueue_destroy("/TASK_SEND");
 		
 	return 0;
 

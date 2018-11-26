@@ -108,7 +108,7 @@ Server_thread (void *args) {
 	char client_ip[INET_ADDRSTRLEN];
 
 	struct threadpool *pool = args;
-	struct task job;
+	struct task_t job;
 
 	if (Server_init() != 0) {
 		return &errno;
@@ -137,7 +137,7 @@ Server_thread (void *args) {
 		job.routine_for_task = recv_from_client;
 		job.arg = &new_fd;
 
-		Thpool_add_task(pool, job, 1);
+		Thpool_add_task(pool, job);
 		printf("Task added.");
 	}
 

@@ -16,7 +16,7 @@
 #include "list.h"
 #include "list_thrsafe.h"
 #include "task.h"
-#include "taskqueue.h"
+//#include "taskqueue.h"
 #include "chat.h"
 #include "thpool.h"
 #include "packet.h"
@@ -144,17 +144,13 @@ void
 send_sign_in (void * arg) {
 	int i;
 	int j;
-	char * ip = arg;
+	char * ip = (char *)arg;
+	printf("ip: %s, arg: %s\n", ip, (char *)arg);
 	struct packet packet;
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES));
 	int sock_fd;
-
-
-	struct args_connect con_args;
-	con_args.ip = ip;
-	con_args.sock_fd = &sock_fd;
 
 	connect_to_server(ip, &sock_fd);
 
@@ -303,10 +299,10 @@ recv_sign_in (uint8_t * buffer,
 	struct threadpool * send_pool;
 	send_pool = Chat_get_sendpool();
 
-	struct task job;
+	struct task_t job;
 	job.routine_for_task = send_member_list;
 	job.arg = sockfd;
-	Thpool_add_task(send_pool, job, 0);
+	Thpool_add_task(send_pool, job);
 
 //	int *sock_fd;
 

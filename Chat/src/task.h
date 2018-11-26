@@ -23,7 +23,7 @@ struct args_send{
 	int * sock_fd;
 };
 
-extern void send_sign_in (void * buffer);
+extern void send_sign_in (void * arg);
 extern void send_quit(void * args);
 extern void send_msg(void * buff);
 extern void send_member_list(void * buff);
