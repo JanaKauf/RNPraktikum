@@ -383,7 +383,7 @@ recv_member_list (uint8_t *buffer, int *sockfd) {
 
 //		connect_to_server(&c_args);
 
-		if (Thrsafe_new_member(id, ip, sockfd) != 0) {
+		if (Thrsafe_new_member(id, ip) != 0) {
 			printf("task: recv_member_list fail to add id %s\n", id);
 		
 		}

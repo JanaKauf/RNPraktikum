@@ -19,18 +19,13 @@ int counter = 0;
 int
 List_init (uint8_t id[16], uint32_t ip) {
 
-//	if (list != 0) {
-//		errno = EADDRINUSE;
-//		return -1;
-//	}
-
 	list = malloc(sizeof(member_t));
 
 	if (list == NULL) {
 		return -1;
 	}
 
-	memcpy(list->id, id, strlen(id)+1);
+	strcpy(list->id, id);
 	list->ip =  ip;
 	list->next = NULL;
 	counter++;
@@ -63,7 +58,7 @@ List_new_member (uint8_t id[16], uint32_t ip) {
 		return -1;
 	}
 
-	strcpy(list->id, id);
+	strcpy(new_member->id, id);
 	new_member->ip = ip;
 	new_member->sock_fd = NULL;
 	new_member->next = NULL;
