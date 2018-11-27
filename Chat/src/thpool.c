@@ -140,6 +140,7 @@ Thpool_routine(void *threadpool) {
 		printf("\t\t\t\t\t\t\t\t\t\t%s......................\n", (char *)job.arg);
         (*(job.routine_for_task))(job.arg);
 
+		free(first->arg);
 		free(first);
 
     }

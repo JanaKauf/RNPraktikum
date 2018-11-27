@@ -143,6 +143,7 @@ send_sign_in (void * arg) {
 	int i;
 	int j;
 	char * ip = "141.22.88.84";
+//	char * ip = (char *) arg;
 	printf("ip: %s, arg: %s\n", ip, (char *)arg);
 	struct packet packet;
 	struct member *p = List_get_list();
@@ -228,8 +229,10 @@ send_msg (void * buffer) {
 	int * sock_fd = List_get_sockfd_by_id(id);
 	struct packet packet;
 
+	printf("msg: %s\n", (char *)buffer);
+
 	struct in_addr i_ip;
-	i_ip.s_addr = *messeger.sock_fd;
+	i_ip.s_addr = messeger.ip;
 
 	if (sock_fd == NULL) {
 		connect_to_server(inet_ntoa(i_ip), sock_fd);

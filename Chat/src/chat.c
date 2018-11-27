@@ -42,14 +42,15 @@ Cmd_routine (void *args ) {
 		fflush(stdin);
 		fgets(msg, 1024, stdin);
 
-		job.arg = msg;
-
-		if (strncmp(msg, "", 1) == 0) {
+		if (strncmp(msg, " ", 1) == 0) {
 			continue;
 		}
 
 		if (msg[0] == '@') {
 			job.routine_for_task = send_msg;
+			job.arg = malloc(sizeof(msg));
+			strcpy(job.arg, msg);
+
 			Thpool_add_task(send_pool, job);
 		
 		} else {
@@ -59,7 +60,9 @@ Cmd_routine (void *args ) {
 			if (strncmp(cmd, "/connect", 8) == 0) {
 				ip = strtok(NULL, "\n");
 				job.routine_for_task = send_sign_in;
-				job.arg = ip;
+				job.arg = malloc(sizeof(ip));
+				strcpy(job.arg, ip);
+
 				printf("arg: %s\n", job.arg);
 				Thpool_add_task(send_pool, job);
 		
