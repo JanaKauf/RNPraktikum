@@ -16,7 +16,7 @@
 #include "list.h"
 #include "list_thrsafe.h"
 #include "task.h"
-//#include "taskqueue.h"
+#include "client.h"
 #include "chat.h"
 #include "thpool.h"
 #include "packet.h"
@@ -25,56 +25,7 @@
 #define PORT "6100"
 
 
-//###################CONNECT_TASKS#######################
-void
-connect_to_server (char * ip, int * sockfd) {
-	struct addrinfo *servlist, *p;
-	struct addrinfo hints;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-
-	if((errno = getaddrinfo(ip, PORT, &hints, &servlist)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errno));
-		return ;
-	}
-
-	for(p = servlist; p != NULL; p = p->ai_next) {
-		if((*sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("client: socket");
-			continue;
-		}
-
-		if(connect(*sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(*sockfd);
-			perror("client: connect");
-			continue;
-		}
-		break;
-	}
-
-	freeaddrinfo(servlist);
-
-	if(p == NULL) {
-		errno = EPERM;
-		perror("connect: ");
-		return ;
-	}
-	//TODO put sockfd in member list
-
-}
-
-void
-disconnect_from_server (int * sockfd) {
-	int * sock_fd = sockfd;
-	if(close(*sock_fd) < 0) {
-		perror("disconnect_from_server: ");
-	}
-}
-
 //######################SEND_TASKS###############################
-
 
 int
 send_all_data (struct packet *packet, int *length, int *sockfd) {
@@ -123,6 +74,7 @@ send_to_server (struct packet* packet, int * sockfd) {
 	return ;
 }
 
+
 void resend_packet(void * arg) {
 	//send failed so we try to connect and send again
 	struct args_send* send_args = arg;
@@ -143,15 +95,12 @@ send_sign_in (void * arg) {
 	int i;
 	int j;
 	char * ip = (char *) arg;
-	printf("ip: %s, arg: %s\n", ip, (char *)arg);
 	struct packet packet;
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1);
-	int sock_fd;
 
-	connect_to_server(ip, &sock_fd);
-
+	int * sock_fd = Client_connect(ip);
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -182,7 +131,9 @@ send_sign_in (void * arg) {
 	}
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
-	send_to_server(&packet, &sock_fd);
+	send_to_server(&packet, sock_fd);
+
+	Client_disconnect();
 	//TODO put sock_fd in memberlist?
 
 }
@@ -200,20 +151,20 @@ send_quit (void * args) {
 	strcpy(packet.payload, ID_NAME);
 
 	struct member * p = NULL;
-	int * sock_fd = NULL;
 	struct in_addr i_ip;
+
+	int * sock_fd;
 
 //	TODO put sends in taskqueue? or send_quit gets called more often in other function?
 
 	for (p = List_get_list(); p != NULL; p = p->next) {
 		i_ip.s_addr = p->ip;
-		sock_fd = List_get_sockfd_by_ip(p->ip);
 
-		if (sock_fd == NULL) {
-			connect_to_server(inet_ntoa(i_ip), sock_fd);
-		}
+		sock_fd =Client_connect(inet_ntoa(i_ip));
 
 		send_to_server(&packet, send_args->sock_fd);
+
+		Client_disconnect();
 	}
 
 }
@@ -225,7 +176,7 @@ send_msg (void * buffer) {
 	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
 	uint16_t bufsize = sizeof(msg);
 	struct member messeger = List_search_member_id(id);
-	int * sock_fd = List_get_sockfd_by_id(id);
+	int * sock_fd;
 	struct packet packet;
 
 	printf("msg: %s\n", msg);
@@ -238,9 +189,7 @@ send_msg (void * buffer) {
 	struct in_addr i_ip;
 	i_ip.s_addr = messeger.ip;
 
-	if (sock_fd == NULL) {
-		connect_to_server(inet_ntoa(i_ip), sock_fd);
-	}
+	sock_fd = Client_connect(inet_ntoa(i_ip));
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -251,14 +200,18 @@ send_msg (void * buffer) {
 	strcpy(packet.payload, msg);
 
 	send_to_server(&packet, sock_fd);
+
+	Client_disconnect();
 }
 
 void
-send_member_list (void * buffer) {
+send_member_list (void * arg) {
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = (num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
+	int *sock_fd = (int *)arg;
+
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
@@ -290,7 +243,8 @@ send_member_list (void * buffer) {
 	}
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
-	send_to_server(&packet, (int *)buffer);
+	send_to_server(&packet, arg);
+	close(*sock_fd);
 }
 
 void
@@ -298,6 +252,7 @@ send_error(void *buffer) {
 	uint8_t * payload = (uint8_t *)"Error";
 	uint16_t string_length = 5;
 	struct packet packet;
+	int * sock_fd;
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -306,7 +261,9 @@ send_error(void *buffer) {
 	packet.crc = crc_32(payload, string_length);
 	strcpy(packet.payload, payload);
 
+//	Client_connect();
 	send_to_server(&packet, buffer);
+	Client_disconnect();
 }
 
 
@@ -361,9 +318,7 @@ recv_sign_in (uint8_t * buffer,
 int
 recv_quit (uint8_t *id) {
 
-	struct member to_delete = List_search_member_id(id);
-
-	disconnect_from_server(to_delete.sock_fd);
+	printf("@%s: quit\n", id);
 
 	if (Thrsafe_delete_member_id(id) != 0) {
 		return -1;

@@ -12,7 +12,6 @@
 typedef struct member {
 	uint32_t	ip;
 	uint8_t 	id[16];
-	int			sock_fd;
 	struct member *next;
 } member_t;
 
@@ -30,12 +29,6 @@ extern int List_delete_member (uint8_t id[16]);
 extern int List_delete (void);
 
 extern void List_print (void);
-
-extern int* List_get_sockfd_by_ip (uint32_t ip);
-
-extern int* List_get_sockfd_by_id (uint8_t id[16]);
-
-extern struct member* List_get_ip_by_sockfd(int sockfd);
 
 extern int List_no_of_members (void);
 

@@ -12,45 +12,12 @@
 #include <signal.h>
 
 #include "client.h"
+#include "packet.h"
 
+int sock_fd;
 
-int
-send_all_data (char *buf, int *length, int * socket) {
-	int total = 0;
-	int bytes_left = *length;
-	int n;
-
-	while (total < *length) {
-		n = send(*socket, buf+total, bytes_left, 0);
-		if (n == -1)
-			break;
-		total += n;
-		bytes_left -= n;
-	}
-
-	*length = total;
-
-	return n==-1?-1:0;
-}
-
-int
-client_send (int * socket, char * buf) {
-	int length = strlen(buf);
-
-	if (send_all_data(buf, &length, socket) == -1) {
-		errno = EPERM;
-		printf("Only send %d bytes\n", length);
-		close(*socket);
-		return errno;
-	
-	}
-
-	return 0;
-}
-
-int
-client_connect (char * server_ip) {
-	int sockfd;
+int *
+Client_connect (char * server_ip) {
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
 	int yes = 1;
@@ -61,17 +28,17 @@ client_connect (char * server_ip) {
 
 	if((errno = getaddrinfo(server_ip, PORT, &hints, &servlist)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errno));
-		return -1;
+		return NULL;
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
-		if((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if((sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("client: socket");
 			continue;
 		}
 
-		if(connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sockfd);
+		if(connect(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sock_fd);
 			perror("client: connect");
 			continue;
 		}
@@ -82,9 +49,16 @@ client_connect (char * server_ip) {
 
 	if(p == NULL) {
 		errno = EPERM;
-		return errno;
+		return NULL;
 	}
 
-	return sockfd;
+	return &sock_fd;
 }
 
+
+void
+Client_disconnect () {
+	if(close(sock_fd) != 0) {
+		perror("disconnect_from_server: ");
+	}
+}

@@ -19,6 +19,7 @@ struct threadpool {
     pthread_t			*threads;
 	pthread_cond_t		cond;
 	int					counter;
+	int					sock_fd;
     struct task_t		*tasks;
 };
 
