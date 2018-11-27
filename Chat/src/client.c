@@ -59,6 +59,6 @@ Client_connect (char * server_ip) {
 void
 Client_disconnect () {
 	if(close(sock_fd) != 0) {
-		perror("disconnect_from_server: ");
+		perror("Client_disconnect: ");
 	}
 }

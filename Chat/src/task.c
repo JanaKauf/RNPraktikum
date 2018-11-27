@@ -102,6 +102,10 @@ send_sign_in (void * arg) {
 
 	int * sock_fd = Client_connect(ip);
 
+	if (sock_fd == NULL) {
+		return ;
+	}
+
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_IN; //type
@@ -160,7 +164,10 @@ send_quit (void * args) {
 	for (p = List_get_list(); p != NULL; p = p->next) {
 		i_ip.s_addr = p->ip;
 
-		sock_fd =Client_connect(inet_ntoa(i_ip));
+		sock_fd = Client_connect(inet_ntoa(i_ip));
+		if (sock_fd == NULL) {
+			continue ;
+		}
 
 		send_to_server(&packet, send_args->sock_fd);
 
@@ -190,6 +197,10 @@ send_msg (void * buffer) {
 	i_ip.s_addr = messeger.ip;
 
 	sock_fd = Client_connect(inet_ntoa(i_ip));
+
+	if (sock_fd == NULL) {
+		return ;
+	}
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -262,6 +273,9 @@ send_error(void *buffer) {
 	strcpy(packet.payload, payload);
 
 //	Client_connect();
+	if (sock_fd == NULL) {
+		return ;
+	}
 	send_to_server(&packet, buffer);
 	Client_disconnect();
 }
@@ -388,8 +402,7 @@ recv_from_client (void *sockfd) {
 
 	int num_bytes;
 
-//	unsigned char buf[1024];
-	int *new_fd = sockfd;
+	int *new_fd = (int *)sockfd;
 
 	struct sockaddr_in client_ip;
 	socklen_t addr_size = sizeof(client_ip);
@@ -414,12 +427,6 @@ recv_from_client (void *sockfd) {
 		crc = ntohl(pck.crc);
 		printf("crc: %u\n", crc);
 
-//		num_bytes -= 8;
-
-//		payload = malloc(num_bytes);	
-
-//		payload = pck.payload;	
-
 		getpeername(*new_fd,
 				(struct sockaddr *)&client_ip,
 				&addr_size);
@@ -434,12 +441,15 @@ recv_from_client (void *sockfd) {
 				break;
 			case MEMBER_LIST:
 				recv_member_list(pck.payload);
+				close(*new_fd);
 				break;
 			case MESSAGE:
 				recv_msg(pck.payload, client_ip.sin_addr.s_addr);
+				close(*new_fd);
 				break;
 			case ERROR:
 				recv_error(pck.payload, client_ip.sin_addr.s_addr);
+				close(*new_fd);
 				break;
 			default:
 				printf("server_thread: error type!\n");

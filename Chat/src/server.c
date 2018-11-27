@@ -135,7 +135,9 @@ Server_thread (void *args) {
 						new_fd);
 
 		job.routine_for_task = recv_from_client;
-		job.arg = &new_fd;
+		job.arg = malloc(sizeof(int));
+		*(int *)(job.arg) = new_fd;
+		job.mallfree = true;
 
 		Thpool_add_task(pool, job);
 		printf("Task added.");
