@@ -88,6 +88,7 @@ void resend_packet(void * arg) {
 
 void
 send_sign_in (void * arg) {
+	printf("----------------\tsend_sign_in()\n");
 	int i;
 	int j;
 	char * ip = (char *) arg;
@@ -141,6 +142,7 @@ send_sign_in (void * arg) {
 
 void
 send_quit (void * args) {
+	printf("----------------\tsend_quit()\n");
 	struct args_send* send_args = args;
 	int i;
 	struct packet packet;
@@ -158,15 +160,15 @@ send_quit (void * args) {
 
 //	TODO put sends in taskqueue? or send_quit gets called more often in other function?
 
-	for (p = List_get_list(); p != NULL; p = p->next) {
+	for (p = List_get_list()->next; p != NULL; p = p->next) {
 		i_ip.s_addr = p->ip;
 
-//		sock_fd = Client_connect(inet_ntoa(i_ip));
+		sock_fd = Client_connect(inet_ntoa(i_ip));
 		if (sock_fd == -1) {
 			continue ;
 		}
 
-//		send_to_server(&packet, send_args->sock_fd);
+		send_to_server(&packet, sock_fd);
 
 		if (close(sock_fd) != 0)
 			perror("Close: ");
@@ -176,6 +178,7 @@ send_quit (void * args) {
 
 void
 send_msg (void * buffer) {
+	printf("----------------\tsend_msg()\n");
 	uint8_t* id = strtok(buffer, " \n\0");
 	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
@@ -194,7 +197,7 @@ send_msg (void * buffer) {
 	struct in_addr i_ip;
 	i_ip.s_addr = messeger.ip;
 
-//	sock_fd = Client_connect(inet_ntoa(i_ip));
+	sock_fd = Client_connect(inet_ntoa(i_ip));
 
 	if (sock_fd == -1) {
 		return ;
@@ -208,7 +211,7 @@ send_msg (void * buffer) {
 
 	strcpy(packet.payload, msg);
 
-//	send_to_server(&packet, sock_fd);
+	send_to_server(&packet, sock_fd);
 
 	if (close(sock_fd) != 0)
 		perror("Close: ");
@@ -216,11 +219,17 @@ send_msg (void * buffer) {
 
 void
 send_member_list (void * arg) {
+	printf("----------------\tsend_member_list()\n");
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = (num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
-	int sock_fd = *((int *)arg);
+	uint8_t * id = (uint8_t *)arg;
+
+	struct member messenger = List_search_member_id(id);
+	int sock_fd;
+	struct in_addr i_ip;
+	i_ip.s_addr = messenger.ip;
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -253,13 +262,19 @@ send_member_list (void * arg) {
 	}
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
-//	send_to_server(&packet, arg);
+	sock_fd = Client_connect(inet_ntoa(i_ip));
+
+	if (sock_fd == -1)
+		return ;
+
+	send_to_server(&packet, sock_fd);
 	if (close(sock_fd) != 0)
 		perror("Close: ");
 }
 
 void
 send_error(void *buffer) {
+	printf("----------------\tsend_error()\n");
 	uint8_t * payload = (uint8_t *)"Error";
 	uint16_t string_length = 5;
 	struct packet packet;
@@ -273,13 +288,13 @@ send_error(void *buffer) {
 	strcpy(packet.payload, payload);
 
 //	Client_connect();
-	if (sock_fd == -1) {
-		return ;
-	}
+//	if (sock_fd == -1) {
+//		return ;
+//	}
 //	send_to_server(&packet, buffer);
 //	Client_disconnect();
-	if (close(sock_fd) != 0)
-		perror("Close: ");
+//	if (close(sock_fd) != 0)
+//		perror("Close: ");
 }
 
 
@@ -288,6 +303,7 @@ send_error(void *buffer) {
 int
 recv_sign_in (uint8_t * buffer,
 		const uint32_t ip_addr, int sockfd) {
+	printf("----------------\trecv_sign_in()\n");
 
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
@@ -299,11 +315,6 @@ recv_sign_in (uint8_t * buffer,
 	struct in_addr i_ip;
 
 	struct task_t job;
-	job.routine_for_task = send_member_list;
-	job.arg = malloc(sizeof(int));
-	*(int *)(job.arg) = sockfd;
-	job.mallfree = true;
-	Thpool_add_task(send_pool, job);
 
 	int offset = 0;
 
@@ -324,6 +335,12 @@ recv_sign_in (uint8_t * buffer,
 
 		if (i == 0) {
 			printf("sign in: %s sock_fd %d\n", id, sockfd);	
+
+			job.routine_for_task = send_member_list;
+			job.arg = malloc(sizeof(id));
+			strcpy(job.arg, id);
+			job.mallfree = true;
+			Thpool_add_task(send_pool, job);
 		}
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
@@ -334,6 +351,7 @@ recv_sign_in (uint8_t * buffer,
 
 int
 recv_quit (uint8_t *id) {
+	printf("----------------\trecv_quit()\n");
 
 	printf("@%s: quit\n", id);
 
@@ -346,6 +364,7 @@ recv_quit (uint8_t *id) {
 
 int
 recv_msg (uint8_t *msg, const uint32_t ip) {
+	printf("----------------\trecv_msg()\n");
 	struct member messeger;
 
 	messeger = List_search_member_ip(ip);
@@ -357,6 +376,7 @@ recv_msg (uint8_t *msg, const uint32_t ip) {
 
 int
 recv_member_list (uint8_t *buffer) {
+	printf("----------------\trecv_member_list()\n");
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
 	char *id;
@@ -386,6 +406,7 @@ recv_member_list (uint8_t *buffer) {
 
 int
 recv_error(uint8_t *error, const uint32_t ip) {
+	printf("----------------\trecv_error()\n");
 	struct member messeger;
 
 	messeger = List_search_member_ip(ip);
