@@ -2,6 +2,7 @@
 #define _THPOOL_H
 //#include "taskqueue.h"
 #include <pthread.h>
+#include <stdbool.h>
 
 #define NUM_THREADS 1
 #define NUM_TASKS	10
@@ -9,6 +10,7 @@
 struct task_t {
 	void (*routine_for_task)(void *);
 	void *arg;
+	bool	mallfree;
 	struct task_t *next;
 };
 

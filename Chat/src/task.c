@@ -142,7 +142,6 @@ void
 send_sign_in (void * arg) {
 	int i;
 	int j;
-//	char * ip = "141.22.88.84";
 	char * ip = (char *) arg;
 	printf("ip: %s, arg: %s\n", ip, (char *)arg);
 	struct packet packet;
@@ -324,6 +323,7 @@ recv_sign_in (uint8_t * buffer,
 	struct task_t job;
 	job.routine_for_task = send_member_list;
 	job.arg = sockfd;
+	job.mallfree = false;
 	Thpool_add_task(send_pool, job);
 
 	int offset = 0;
