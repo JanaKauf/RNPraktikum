@@ -25,7 +25,7 @@ List_init (uint8_t id[16], uint32_t ip) {
 		return -1;
 	}
 
-	strcpy(list->id, id);
+	memcpy(list->id, id, 16);
 	list->ip =  ip;
 	list->next = NULL;
 	counter++;
@@ -58,7 +58,7 @@ List_new_member (uint8_t id[16], uint32_t ip) {
 		return -1;
 	}
 
-	strcpy(new_member->id, id);
+	memcpy(new_member->id, id, 16);
 	new_member->ip = ip;
 	new_member->sock_fd = NULL;
 	new_member->next = NULL;
@@ -82,7 +82,7 @@ List_search_member_id (uint8_t id[16]) {
 		return search;
 	}
 
-	for (p = list; p->next != NULL; p = p->next){
+	for (p = list; p != NULL; p = p->next){
 		if (strncmp(id, p->id, 16) == 0) {
 			search = *p;
 			return search;
@@ -104,7 +104,7 @@ List_search_member_ip (uint32_t ip) {
 		return search;
 	}
 
-	for (p = list; p->next != NULL; p = p->next){
+	for (p = list; p != NULL; p = p->next){
 		if (p->ip == ip) {
 			search = *p;
 			return search;
@@ -124,7 +124,7 @@ List_delete_member (uint8_t id[16]) {
 		return -1;
 	}
 
-	for (p = list; p->next != NULL; p = p->next){
+	for (p = list; p != NULL; p = p->next){
 		if (strncmp(p->id, id, 16) == 0) {
 			del_member = p;
 		}
@@ -194,14 +194,14 @@ List_get_sockfd_by_id (uint8_t id[16]) {
 		return NULL;
 	}
 
-	for (p = list; p->next != NULL; p = p->next){
+	for (p = list; p != NULL; p = p->next){
 		if (strncmp(p->id, id, 16) == 0) {
 			break;
 		}
 	}
 
 	if (p != NULL) {
-		return p->sock_fd;
+		return &(p->sock_fd);
 	}
 
 	return NULL;
@@ -217,14 +217,14 @@ List_get_sockfd_by_ip (uint32_t ip) {
 		return NULL;
 	}
 
-	for (p = list; p->next != NULL; p = p->next){
+	for (p = list; p != NULL; p = p->next){
 		if (p->ip == ip) {
 			break;
 		}
 	}
 
 	if (p != NULL) {
-		return p->sock_fd;
+		return &(p->sock_fd);
 	}
 
 	return NULL;
@@ -239,8 +239,8 @@ struct member* List_get_ip_by_sockfd(int sockfd) {
 		return NULL;
 	}
 
-	for (p = list; p->next != NULL; p = p->next){
-		if (*p->sock_fd == sockfd) {
+	for (p = list; p != NULL; p = p->next){
+		if (p->sock_fd == sockfd) {
 			break;
 		}
 	}

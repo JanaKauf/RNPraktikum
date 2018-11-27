@@ -137,7 +137,6 @@ Thpool_routine(void *threadpool) {
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
 
-		printf("\t\t\t\t\t\t\t\t\t\t%s......................\n", (char *)job.arg);
         (*(job.routine_for_task))(job.arg);
 
 		if (job.mallfree) {

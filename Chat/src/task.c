@@ -221,14 +221,19 @@ send_quit (void * args) {
 void
 send_msg (void * buffer) {
 	uint8_t* id = strtok(buffer, " \n\0");
-	id = ++id; //remove @ from id
+	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
 	uint16_t bufsize = sizeof(msg);
 	struct member messeger = List_search_member_id(id);
 	int * sock_fd = List_get_sockfd_by_id(id);
 	struct packet packet;
 
-	printf("msg: %s\n", (char *)buffer);
+	printf("msg: %s\n", msg);
+
+	if (messeger.ip == 0) {
+		printf("messeger.id : %s id: %s\n", messeger.id, id);
+		return ;
+	}
 
 	struct in_addr i_ip;
 	i_ip.s_addr = messeger.ip;

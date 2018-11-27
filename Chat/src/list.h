@@ -12,7 +12,7 @@
 typedef struct member {
 	uint32_t	ip;
 	uint8_t 	id[16];
-	int			*sock_fd;
+	int			sock_fd;
 	struct member *next;
 } member_t;
 
