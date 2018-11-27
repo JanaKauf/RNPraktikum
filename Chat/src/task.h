@@ -8,21 +8,7 @@
 #define ERROR 5
 
 #define VERSION 1
-//###################CONNECT_TASKS#######################
-struct args_connect{
-	char * ip;
-	int * sock_fd;
-};
-
-extern void connect_to_server (char *ip, int * sockfd);
-extern void disconnect_from_server (int * sockfd);
-
 //###################SEND_TASKS#######################
-struct args_send{
-	void * buf;
-	int * sock_fd;
-};
-
 extern void send_sign_in (void * arg);
 extern void send_quit(void * args);
 extern void send_msg(void * buff);

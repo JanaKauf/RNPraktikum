@@ -28,13 +28,13 @@
 //######################SEND_TASKS###############################
 
 int
-send_all_data (struct packet *packet, int *length, int *sockfd) {
+send_all_data (struct packet *packet, int *length, int sockfd) {
 	int total = 0;
 	int bytes_left = *length;
 	int n;
 
 	while (total < *length) {
-		n = send(*sockfd, packet+total, bytes_left, 0);
+		n = send(sockfd, packet+total, bytes_left, 0);
 		if (n == -1) {
 			break;
 		}
@@ -48,27 +48,23 @@ send_all_data (struct packet *packet, int *length, int *sockfd) {
 }
 
 void
-send_to_server (struct packet* packet, int * sockfd) {
+send_to_server (struct packet* packet, int sockfd) {
 //	struct args_send *send_args = args;
 	int length = sizeof(struct packet);
 
 	if (send_all_data(packet, &length, sockfd) == -1) {
-		struct args_send send_args;
-		send_args.sock_fd = sockfd;
-		send_args.buf = packet;
+//		struct args_send send_args;
+//		send_args.sock_fd = sockfd;
+//		send_args.buf = packet;
 //		resend_packet(&send_args);
 
 
 		errno = EPERM;
 		printf("Only send %d bytes\n", length);
 
-		close(*sockfd);
 		perror("send_to_server: ");
 		return ;
 	
-	}
-	if (packet->typ == SIGN_IN) {
-		close(*sockfd);
 	}
 
 	return ;
@@ -100,9 +96,9 @@ send_sign_in (void * arg) {
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1);
 
-	int * sock_fd = Client_connect(ip);
+	int sock_fd = Client_connect(ip);
 
-	if (sock_fd == NULL) {
+	if (sock_fd == -1) {
 		return ;
 	}
 
@@ -137,7 +133,8 @@ send_sign_in (void * arg) {
 
 	send_to_server(&packet, sock_fd);
 
-	Client_disconnect();
+	if (close(sock_fd) != 0)
+		perror("Close: ");
 	//TODO put sock_fd in memberlist?
 
 }
@@ -157,21 +154,22 @@ send_quit (void * args) {
 	struct member * p = NULL;
 	struct in_addr i_ip;
 
-	int * sock_fd;
+	int sock_fd;
 
 //	TODO put sends in taskqueue? or send_quit gets called more often in other function?
 
 	for (p = List_get_list(); p != NULL; p = p->next) {
 		i_ip.s_addr = p->ip;
 
-		sock_fd = Client_connect(inet_ntoa(i_ip));
-		if (sock_fd == NULL) {
+//		sock_fd = Client_connect(inet_ntoa(i_ip));
+		if (sock_fd == -1) {
 			continue ;
 		}
 
-		send_to_server(&packet, send_args->sock_fd);
+//		send_to_server(&packet, send_args->sock_fd);
 
-		Client_disconnect();
+		if (close(sock_fd) != 0)
+			perror("Close: ");
 	}
 
 }
@@ -183,7 +181,7 @@ send_msg (void * buffer) {
 	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
 	uint16_t bufsize = sizeof(msg);
 	struct member messeger = List_search_member_id(id);
-	int * sock_fd;
+	int sock_fd;
 	struct packet packet;
 
 	printf("msg: %s\n", msg);
@@ -196,9 +194,9 @@ send_msg (void * buffer) {
 	struct in_addr i_ip;
 	i_ip.s_addr = messeger.ip;
 
-	sock_fd = Client_connect(inet_ntoa(i_ip));
+//	sock_fd = Client_connect(inet_ntoa(i_ip));
 
-	if (sock_fd == NULL) {
+	if (sock_fd == -1) {
 		return ;
 	}
 
@@ -210,9 +208,10 @@ send_msg (void * buffer) {
 
 	strcpy(packet.payload, msg);
 
-	send_to_server(&packet, sock_fd);
+//	send_to_server(&packet, sock_fd);
 
-	Client_disconnect();
+	if (close(sock_fd) != 0)
+		perror("Close: ");
 }
 
 void
@@ -221,7 +220,7 @@ send_member_list (void * arg) {
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = (num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
-	int *sock_fd = (int *)arg;
+	int sock_fd = *((int *)arg);
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -254,8 +253,9 @@ send_member_list (void * arg) {
 	}
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
-	send_to_server(&packet, arg);
-	close(*sock_fd);
+//	send_to_server(&packet, arg);
+	if (close(sock_fd) != 0)
+		perror("Close: ");
 }
 
 void
@@ -263,7 +263,7 @@ send_error(void *buffer) {
 	uint8_t * payload = (uint8_t *)"Error";
 	uint16_t string_length = 5;
 	struct packet packet;
-	int * sock_fd;
+	int sock_fd;
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -273,11 +273,13 @@ send_error(void *buffer) {
 	strcpy(packet.payload, payload);
 
 //	Client_connect();
-	if (sock_fd == NULL) {
+	if (sock_fd == -1) {
 		return ;
 	}
-	send_to_server(&packet, buffer);
-	Client_disconnect();
+//	send_to_server(&packet, buffer);
+//	Client_disconnect();
+	if (close(sock_fd) != 0)
+		perror("Close: ");
 }
 
 
@@ -285,7 +287,7 @@ send_error(void *buffer) {
 //######################RECV_TASKS###############################
 int
 recv_sign_in (uint8_t * buffer,
-		const uint32_t ip_addr, int * sockfd) {
+		const uint32_t ip_addr, int sockfd) {
 
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
@@ -298,8 +300,9 @@ recv_sign_in (uint8_t * buffer,
 
 	struct task_t job;
 	job.routine_for_task = send_member_list;
-	job.arg = sockfd;
-	job.mallfree = false;
+	job.arg = malloc(sizeof(int));
+	*(int *)(job.arg) = sockfd;
+	job.mallfree = true;
 	Thpool_add_task(send_pool, job);
 
 	int offset = 0;
@@ -320,7 +323,7 @@ recv_sign_in (uint8_t * buffer,
 		}
 
 		if (i == 0) {
-			printf("sign in: %s sock_fd %d\n", id, *sockfd);	
+			printf("sign in: %s sock_fd %d\n", id, sockfd);	
 		}
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
@@ -402,20 +405,21 @@ recv_from_client (void *sockfd) {
 
 	int num_bytes;
 
-	int *new_fd = (int *)sockfd;
+	int new_fd = *(int *)(sockfd);
 
 	struct sockaddr_in client_ip;
 	socklen_t addr_size = sizeof(client_ip);
 	
-    if ((num_bytes = recv(*new_fd, (struct packet *)&pck, sizeof (struct packet), 0)) <= 0) {
+    if ((num_bytes = recv(new_fd, (struct packet *)&pck, sizeof (struct packet), 0)) <= 0) {
 		if (num_bytes == 0) {
-			printf("server_thread: sockfd %d hung up\n", *new_fd);
+			printf("server_thread: sockfd %d hung up\n", new_fd);
 
 		} else {
 	        perror("recv:");
         }
 
-        close(*new_fd);
+		if (close(new_fd)) 
+		   perror("Close: ");	
 	} else {
 		type = pck.typ;
 
@@ -427,7 +431,7 @@ recv_from_client (void *sockfd) {
 		crc = ntohl(pck.crc);
 		printf("crc: %u\n", crc);
 
-		getpeername(*new_fd,
+		getpeername(new_fd,
 				(struct sockaddr *)&client_ip,
 				&addr_size);
 				
@@ -436,20 +440,24 @@ recv_from_client (void *sockfd) {
 				recv_sign_in(pck.payload, client_ip.sin_addr.s_addr, new_fd);
 				break;
 			case SIGN_OUT:
-				close(*new_fd);
 				recv_quit(pck.payload);
+				if (close(new_fd) != 0)
+					perror("Close: ");
 				break;
 			case MEMBER_LIST:
 				recv_member_list(pck.payload);
-				close(*new_fd);
+				if (close(new_fd) != 0)
+					perror("Close: ");
 				break;
 			case MESSAGE:
 				recv_msg(pck.payload, client_ip.sin_addr.s_addr);
-				close(*new_fd);
+				if (close(new_fd) != 0)
+					perror("Close: ");
 				break;
 			case ERROR:
 				recv_error(pck.payload, client_ip.sin_addr.s_addr);
-				close(*new_fd);
+				if (close(new_fd) != 0)
+					perror("Close: ");
 				break;
 			default:
 				printf("server_thread: error type!\n");

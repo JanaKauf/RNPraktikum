@@ -16,7 +16,7 @@
 
 int sock_fd;
 
-int *
+int
 Client_connect (char * server_ip) {
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
@@ -28,7 +28,7 @@ Client_connect (char * server_ip) {
 
 	if((errno = getaddrinfo(server_ip, PORT, &hints, &servlist)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errno));
-		return NULL;
+		return -1;
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
@@ -49,16 +49,8 @@ Client_connect (char * server_ip) {
 
 	if(p == NULL) {
 		errno = EPERM;
-		return NULL;
+		return -1;
 	}
 
-	return &sock_fd;
-}
-
-
-void
-Client_disconnect () {
-	if(close(sock_fd) != 0) {
-		perror("Client_disconnect: ");
-	}
+	return sock_fd;
 }
