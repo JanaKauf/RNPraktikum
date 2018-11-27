@@ -69,15 +69,14 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
 	new->arg = job.arg;
 	new->next = NULL;
 
+
+	struct task_t *p;
+
+
+	if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
+		perror("thpool: pthread_mutex_lock");
+
 	if (pool->tasks == NULL) {
-		if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
-			perror("thpool: pthread_mutex_lock");
-
-//		while (pool->counter == NUM_TASKS) {
-//			if ((errno =pthread_cond_wait(&(pool->cond), &(pool->mutex))) != 0)
-//				perror("thpool: pthread_cond_wait");
-//		}
-
 		pool->tasks = new;
 		pool->counter++;
 
@@ -86,19 +85,9 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
 
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
-		return 0;	
+
+		return 0;
 	}
-
-	struct task_t *p;
-
-
-	if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
-		perror("thpool: pthread_mutex_lock");
-
-//	while (pool->counter == NUM_TASKS) {
-//		if ((errno =pthread_cond_wait(&(pool->cond), &(pool->mutex))) != 0)
-//			perror("thpool: pthread_cond_wait");
-//	}
 
 	for (p = pool->tasks; p->next != NULL; p = p->next) {
 	
