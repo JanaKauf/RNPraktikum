@@ -31,7 +31,8 @@ Cmd_routine (void *args ) {
 	char msg[1024] = "";
 	char *cmd = "";
 
-	struct task_t job;
+	struct task_t job_msg;
+	struct task_t job_sign;
 
 	char * ip;
 
@@ -47,11 +48,11 @@ Cmd_routine (void *args ) {
 		}
 
 		if (msg[0] == '@') {
-			job.routine_for_task = send_msg;
-			job.arg = malloc(sizeof(msg));
-			strcpy(job.arg, msg);
+			job_msg.routine_for_task = send_msg;
+			job_msg.arg = malloc(sizeof(msg));
+			strcpy(job_msg.arg, msg);
 
-			Thpool_add_task(send_pool, job);
+			Thpool_add_task(send_pool, job_msg);
 		
 		} else {
 
@@ -59,12 +60,11 @@ Cmd_routine (void *args ) {
 
 			if (strncmp(cmd, "/connect", 8) == 0) {
 				ip = strtok(NULL, "\n");
-				job.routine_for_task = send_sign_in;
-				job.arg = malloc(sizeof(ip));
-				strcpy(job.arg, ip);
+				job_sign.routine_for_task = send_sign_in;
+				job_sign.arg = malloc(sizeof(ip));
+				strcpy(job_sign.arg, ip);
 
-				printf("arg: %s\n", job.arg);
-				Thpool_add_task(send_pool, job);
+				Thpool_add_task(send_pool, job_sign);
 		
 			} else if (strncmp(cmd, "/quit", 5) == 0) {
 				//job.routine_for_task = send_quit;

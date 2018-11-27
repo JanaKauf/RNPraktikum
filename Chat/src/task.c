@@ -142,8 +142,8 @@ void
 send_sign_in (void * arg) {
 	int i;
 	int j;
-	char * ip = "141.22.88.84";
-//	char * ip = (char *) arg;
+//	char * ip = "141.22.88.84";
+	char * ip = (char *) arg;
 	printf("ip: %s, arg: %s\n", ip, (char *)arg);
 	struct packet packet;
 	struct member *p = List_get_list();
