@@ -105,6 +105,16 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
     return 0;
 }
 
+static void
+cleanup_handler (void *args) {
+	printf("Cleaning...\n");
+
+	pthread_mutex_t * mutex = (pthread_mutex_t *)args;
+
+	if (pthread_mutex_unlock(mutex)) 
+		perror("Thpool: mutex_unlock");
+}
+
 void *
 Thpool_routine(void *threadpool) {
     struct threadpool *pool = (struct threadpool *) threadpool;
@@ -118,11 +128,13 @@ Thpool_routine(void *threadpool) {
 		if((errno = pthread_mutex_lock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_lock");
 
+		pthread_cleanup_push(cleanup_handler, &(pool->mutex));
 		while (pool->counter == 0) {
 			if ((errno =pthread_cond_wait(&(pool->cond), &(pool->mutex))) != 0)
 				perror("thpool: pthread_cond_wait");
 
 		}
+		pthread_cleanup_pop(0);
 
 		first = pool->tasks;
 

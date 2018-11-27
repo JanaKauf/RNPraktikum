@@ -32,6 +32,7 @@ Cmd_routine (void *args ) {
 
 	struct task_t job_msg;
 	struct task_t job_sign;
+	struct task_t job_quit;
 
 	char * ip;
 
@@ -53,6 +54,8 @@ Cmd_routine (void *args ) {
 			strcpy(job_msg.arg, msg);
 
 			Thpool_add_task(send_pool, job_msg);
+
+			printf("Sendind message...\n");
 		
 		} else {
 
@@ -66,10 +69,17 @@ Cmd_routine (void *args ) {
 				strcpy(job_sign.arg, ip);
 
 				Thpool_add_task(send_pool, job_sign);
+
+				printf("Connecting to %s...\n", ip);
 		
 			} else if (strncmp(cmd, "/quit", 5) == 0) {
-				//job.routine_for_task = send_quit;
-				//Thpool_add_task(send_pool, job, 1);
+				job_quit.routine_for_task = send_quit;
+				job_quit.arg = malloc(sizeof(msg));
+				job_quit.arg = msg;
+				job_quit.mallfree = true;
+				Thpool_add_task(send_pool, job_quit);
+
+				printf("Quiting...\n");
 				pthread_exit(0);
 				break;
 		
