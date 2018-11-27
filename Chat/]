@@ -355,7 +355,7 @@ recv_quit (uint8_t *id) {
 
 	struct member to_delete = List_search_member_id(id);
 
-	disconnect_from_server(to_delete.sock_fd);
+	disconnect_from_server(to_delete->sock_fd);
 
 	if (Thrsafe_delete_member_id(id) != 0) {
 		return -1;
@@ -371,6 +371,11 @@ recv_msg (uint8_t *msg, const uint32_t ip) {
 	messeger = List_search_member_ip(ip);
 	
 	printf("#%s: %s\n", messeger.id, msg);
+
+//	for (char * i = msg; *i != '\0'; i = i++) {
+//		printf("%c", *i);
+//	}
+//	printf("\n");
 
 	return 0;
 }
@@ -410,6 +415,8 @@ recv_error(uint8_t *error, const uint32_t ip) {
 
 	messeger = List_search_member_ip(ip);
 	printf("#%s: %s\n", messeger.id, error);
+
+//	printf("error: %s\n", error);
 
 	return 0;
 }
@@ -451,11 +458,11 @@ recv_from_client (void *sockfd) {
 		crc = ntohl(pck.crc);
 		printf("crc: %u\n", crc);
 
-//		num_bytes -= 8;
+		num_bytes -= 8;
 
-//		payload = malloc(num_bytes);	
+		payload = malloc(num_bytes);	
 
-//		payload = pck.payload;	
+		payload = pck.payload;	
 
 		getpeername(*new_fd,
 				(struct sockaddr *)&client_ip,
