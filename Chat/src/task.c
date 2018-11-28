@@ -318,7 +318,8 @@ recv_sign_in (uint8_t * buffer,
 
 	int offset = 0;
 
-	for (int i = 0; i < no_member; i++) {
+	int i;
+	for (i = 0; i < no_member; i++) {
 		ip = (uint32_t) buffer[1 + offset] << 24
 					| buffer[2 + offset] << 16
 					| buffer[3 + offset] << 8
@@ -383,7 +384,8 @@ recv_member_list (uint8_t *buffer) {
 
 	int offset = 0;
 
-	for (int i = 0; i < no_member; i++) {
+	int i;
+	for (i = 0; i < no_member; i++) {
 		ip = (uint32_t) buffer[1 + offset] << 24
 					| buffer[2 + offset] << 16
 					| buffer[3 + offset] << 8
