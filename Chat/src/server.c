@@ -29,7 +29,7 @@
 #include "chat.h"
 
 
-int sock_fd;
+int sock_server;
 struct addrinfo hints;
 struct sockaddr_storage their_addr;
 int yes = 1;
@@ -51,18 +51,18 @@ Server_init(char * id, char * interface) {
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
-		if((sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if((sock_server = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("server: socket");
 			continue;
 		}
 
-		if(setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
+		if(setsockopt(sock_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 			perror("server: setsockopt");
 			return -1;
 		}
 
-		if(bind(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sock_fd);
+		if(bind(sock_server, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sock_server);
 			perror("server: bind");
 			continue;
 		}
@@ -80,7 +80,7 @@ Server_init(char * id, char * interface) {
 	struct ifreq ifr;
 	strcpy(ifr.ifr_name, interface);	
 
-	if (ioctl(sock_fd, SIOCGIFADDR, &ifr) != 0) {
+	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
 		perror("ioctl: ");
 		return -1;
 	}
@@ -91,12 +91,12 @@ Server_init(char * id, char * interface) {
 		return -1;
 	}
 
-	if(listen(sock_fd, HOLD_QUEUE) == -1) {
+	if(listen(sock_server, HOLD_QUEUE) == -1) {
 		errno = EPERM;
 		return -1;
 	}
 
-	printf(" | server is listening\t:::\n");
+	printf(GRN " | server is listening\t:::\n" RESET);
 
 
 	return 0;
@@ -120,23 +120,21 @@ Server_thread (void *args) {
 		return NULL;
 	}
 
-	printf("## server_thread started\n");
+	printf(GRN "## server_thread started\n" RESET);
 
 	pthread_setcanceltype(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcancelstate(PTHREAD_CANCEL_DEFERRED, NULL);
 	while(1) {
 		
         addr_len = sizeof client_addr;
-        new_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &addr_len);
-
-		printf("sock_fd %d\n", sock_fd);
+        new_fd = accept(sock_server, (struct sockaddr *)&client_addr, &addr_len);
 
         if (new_fd == -1) {
 			perror("accept");
 			continue;
 		}
 
-        printf("server_thread: new connection from %s on sockfd %d\n",
+        printf(GRN "server_thread: new connection from %s on sockfd %d\n" RESET,
 				inet_ntop(client_addr.ss_family,
 						&(((struct sockaddr_in*)&client_addr)->sin_addr), client_ip,
 						INET_ADDRSTRLEN),

@@ -19,16 +19,16 @@ struct threadpool *send_pool;
 
 void
 help_function (void) {
-	printf("\n# /connect <ip-adress>\t\t-- Connects to another peer\n");
+	printf(MAG "\n# /connect <ip-adress>\t\t-- Connects to another peer\n");
 	printf("# /quit\t\t\t\t-- Quits the program\n");
 	printf("# /info\t\t\t\t-- Displays list members\n");
-	printf("# /help\t\t\t\t-- Displays commands\n\n");
+	printf("# /help\t\t\t\t-- Displays commands\n\n" RESET);
 
 }
 
 void *
 Cmd_routine (void *args ) {
-	printf("## CMD_thread started\n");
+	printf(GRN "## CMD_thread started\n" RESET);
 	char msg[1024] = "";
 	char *cmd = "";
 
@@ -72,7 +72,7 @@ Cmd_routine (void *args ) {
 
 				Thpool_add_task(send_pool, job_sign);
 
-				printf("Connecting to %s...\n", ip);
+				printf(MAG "Connecting to %s...\n" RESET, ip);
 		
 			} else if (strncmp(cmd, "/quit", 5) == 0) {
 				job_quit.routine_for_task = send_quit;
@@ -115,30 +115,30 @@ main (int argc, char *argv[]) {
 
 	printf("arg: %s\n", arg);
 
-	printf("-- Creating member_list...\n");
+	printf(MAG "-- Creating member_list...\n" RESET);
 
 	if (Thrsafe_init() != 0) {
 		return 0;
 	}
 
-	printf("-- Creating thpool - RECV...\n");
+	printf(MAG "-- Creating thpool - RECV...\n" RESET);
 
 	if ((recv_pool = Thpool_create()) == NULL) {
 		printf("main: recv_pool = create - fail");
 		goto thrsafe;
 	}
 
-	printf("-- Creating thpool - SEND...\n");
+	printf(MAG "-- Creating thpool - SEND...\n" RESET);
 
 	if ((send_pool = Thpool_create()) == NULL) {
 		printf("main: send_pool = create - fail");
 		goto recvfree;
 	}
 
-	printf("-- Serv_thread create...\n");
+	printf(MAG "-- Serv_thread create...\n" RESET);
 	pthread_create(&serv_thread, NULL, Server_thread, arg);
 
-	printf("-- Cmd_thread create...\n");
+	printf(MAG "-- Cmd_thread create...\n" RESET);
 	pthread_create(&cmd_control, NULL, Cmd_routine, NULL);
 
 	pthread_join(cmd_control, NULL);

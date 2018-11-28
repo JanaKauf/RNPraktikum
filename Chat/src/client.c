@@ -13,6 +13,7 @@
 
 #include "client.h"
 #include "packet.h"
+#include "color.h"
 
 int sock_fd;
 

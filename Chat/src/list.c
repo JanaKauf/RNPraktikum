@@ -11,7 +11,9 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+
 #include "list.h"
+#include "color.h"
 
 member_t *list = NULL;
 int counter = 0;
@@ -173,7 +175,7 @@ List_print (void) {
 		return ;
 	}
 
-	printf("_____________MEMBER_LIST____________\n\n");
+	printf(MAG "_____________MEMBER_LIST____________\n\n");
 
 	for (p = list; p != NULL; p = p->next){
 		ip_addr.s_addr = p->ip;
@@ -181,6 +183,8 @@ List_print (void) {
 		printf("ip\t\t%s\n", inet_ntoa(ip_addr));
 		printf("\n");
 	}
+
+	printf(RESET);
 
 }
 
