@@ -188,7 +188,7 @@ send_msg (void * buffer) {
 	printf(BLU "#\t#\t#\t#\tsend_msg()\t#\t#\t#\t#\n" RESET);
 	uint8_t* id = strtok(buffer, " \n\0");
 	id++; //remove @ from id
-	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
+	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0");
 	uint16_t bufsize = sizeof(msg);
 	struct member messeger = List_search_member_id(id);
 	int sock_fd;
