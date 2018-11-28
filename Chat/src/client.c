@@ -18,6 +18,7 @@ int sock_fd;
 
 int
 Client_connect (char * server_ip) {
+	printf("Connect %s\n", server_ip);
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
 	int yes = 1;

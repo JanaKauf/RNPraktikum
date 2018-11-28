@@ -25,6 +25,8 @@
 #include "thpool.h"
 #include "task.h"
 #include "list.h"
+#include "color.h"
+#include "chat.h"
 
 
 int sock_fd;
@@ -33,7 +35,7 @@ struct sockaddr_storage their_addr;
 int yes = 1;
 
 int
-Server_init(void) {
+Server_init(char * id, char * interface) {
 	struct addrinfo *servlist, *p;
 
 	char ip[INET_ADDRSTRLEN];
@@ -45,7 +47,7 @@ Server_init(void) {
 
 	if((errno = getaddrinfo(0, PORT, &hints, &servlist)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(errno));
-		return 1;
+		return -1;
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
@@ -56,8 +58,7 @@ Server_init(void) {
 
 		if(setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 			perror("server: setsockopt");
-			errno = EPERM;
-			return errno;
+			return -1;
 		}
 
 		if(bind(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
@@ -72,11 +73,12 @@ Server_init(void) {
 
 	if(p == NULL) {
 		errno = EPERM;
-		return errno;
+		perror("Server_init: p");
+		return -1;
 	}
 
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, INTERFACE_NAME);	
+	strcpy(ifr.ifr_name, interface);	
 
 	if (ioctl(sock_fd, SIOCGIFADDR, &ifr) != 0) {
 		perror("ioctl: ");
@@ -85,13 +87,13 @@ Server_init(void) {
 
 	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
 
-	if (List_init(ID_NAME, my_ip->sin_addr.s_addr) != 0) {
+	if (List_init(id, my_ip->sin_addr.s_addr) != 0) {
 		return -1;
 	}
 
 	if(listen(sock_fd, HOLD_QUEUE) == -1) {
 		errno = EPERM;
-		return errno;
+		return -1;
 	}
 
 	printf(" | server is listening\t:::\n");
@@ -107,11 +109,15 @@ Server_thread (void *args) {
 	socklen_t addr_len;
 	char client_ip[INET_ADDRSTRLEN];
 
-	struct threadpool *pool = args;
+	char * id = strtok((char *)args, " ");
+	char * interface = strtok(NULL, "\0");
+
+	struct threadpool *pool = Chat_get_recvpool();
 	struct task_t job;
 
-	if (Server_init() != 0) {
-		return &errno;
+	if (Server_init(id, interface) != 0) {
+
+		return NULL;
 	}
 
 	printf("## server_thread started\n");
@@ -125,10 +131,10 @@ Server_thread (void *args) {
 
 		printf("sock_fd %d\n", sock_fd);
 
-        //if (new_fd == -1) {
-		//	perror("accept");
-		//	continue;
-		//}
+        if (new_fd == -1) {
+			perror("accept");
+			continue;
+		}
 
         printf("server_thread: new connection from %s on sockfd %d\n",
 				inet_ntop(client_addr.ss_family,
@@ -142,7 +148,6 @@ Server_thread (void *args) {
 		job.mallfree = true;
 
 		Thpool_add_task(pool, job);
-		printf("Task added.");
 	}
 
 }

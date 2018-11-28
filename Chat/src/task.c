@@ -20,6 +20,7 @@
 #include "chat.h"
 #include "thpool.h"
 #include "packet.h"
+#include "color.h"
 #include "../libcrc/src/crc32.c"
 
 #define PORT "6100"
@@ -88,7 +89,7 @@ void resend_packet(void * arg) {
 
 void
 send_sign_in (void * arg) {
-	printf("----------------\tsend_sign_in()\n");
+	printf(BLU "#\t#\t#\t#\tsend_sign_in()\t#\t#\t#\t#\n" RESET);
 	int i;
 	int j;
 	char * ip = (char *) arg;
@@ -100,8 +101,10 @@ send_sign_in (void * arg) {
 	int sock_fd = Client_connect(ip);
 
 	if (sock_fd == -1) {
+		perror(RED "Client_connect: send_sign_in" RESET);
 		return ;
 	}
+
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -135,23 +138,26 @@ send_sign_in (void * arg) {
 	send_to_server(&packet, sock_fd);
 
 	if (close(sock_fd) != 0)
-		perror("Close: ");
+		perror(RED "Close: send_sign_in" RESET);
 	//TODO put sock_fd in memberlist?
 
 }
 
 void
 send_quit (void * args) {
-	printf("----------------\tsend_quit()\n");
+	printf(BLU "#\t#\t#\t#\tsend_quit()\t#\t#\t#\t#\n" RESET);
 	struct args_send* send_args = args;
 	int i;
 	struct packet packet;
+
+	struct member *me = List_get_list();
+
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(ID_LENGTH); //length
-	packet.crc = htonl(crc_32(ID_NAME, ID_LENGTH)); //TODO use define???
-	strcpy(packet.payload, ID_NAME);
+	packet.crc = htonl(crc_32(me->id, ID_LENGTH)); //TODO use define???
+	strcpy(packet.payload, me->id);
 
 	struct member * p = NULL;
 	struct in_addr i_ip;
@@ -165,20 +171,21 @@ send_quit (void * args) {
 
 		sock_fd = Client_connect(inet_ntoa(i_ip));
 		if (sock_fd == -1) {
+			perror(RED "Client_connect: send_quit" RESET);
 			continue ;
 		}
 
 		send_to_server(&packet, sock_fd);
 
 		if (close(sock_fd) != 0)
-			perror("Close: ");
+			perror(RED "Close: send_quit" RESET);
 	}
 
 }
 
 void
 send_msg (void * buffer) {
-	printf("----------------\tsend_msg()\n");
+	printf(BLU "#\t#\t#\t#\tsend_msg()\t#\t#\t#\t#\n" RESET);
 	uint8_t* id = strtok(buffer, " \n\0");
 	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, " \n\0");
@@ -190,7 +197,7 @@ send_msg (void * buffer) {
 	printf("msg: %s\n", msg);
 
 	if (messeger.ip == 0) {
-		printf("messeger.id : %s id: %s\n", messeger.id, id);
+		perror(RED "send_msg ID not found" RESET);
 		return ;
 	}
 
@@ -200,6 +207,7 @@ send_msg (void * buffer) {
 	sock_fd = Client_connect(inet_ntoa(i_ip));
 
 	if (sock_fd == -1) {
+		perror(RED "Client_connect: send_msg" RESET);
 		return ;
 	}
 
@@ -214,12 +222,12 @@ send_msg (void * buffer) {
 	send_to_server(&packet, sock_fd);
 
 	if (close(sock_fd) != 0)
-		perror("Close: ");
+		perror(RED "Close: send_msg" RESET);
 }
 
 void
 send_member_list (void * arg) {
-	printf("----------------\tsend_member_list()\n");
+	printf(BLU "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
 	struct member *p = List_get_list();
 	int num_of_members = List_no_of_members();
 	uint16_t bufsize = (num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1;
@@ -230,6 +238,13 @@ send_member_list (void * arg) {
 	int sock_fd;
 	struct in_addr i_ip;
 	i_ip.s_addr = messenger.ip;
+
+	sock_fd = Client_connect(inet_ntoa(i_ip));
+
+	if (sock_fd == -1) {
+		perror(RED "Client_connect: send_member_list" RESET);
+		return ;
+	}
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -262,19 +277,14 @@ send_member_list (void * arg) {
 	}
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
-	sock_fd = Client_connect(inet_ntoa(i_ip));
-
-	if (sock_fd == -1)
-		return ;
-
 	send_to_server(&packet, sock_fd);
 	if (close(sock_fd) != 0)
-		perror("Close: ");
+		perror(RED "Close: send_member_list" RESET);
 }
 
 void
 send_error(void *buffer) {
-	printf("----------------\tsend_error()\n");
+	printf(BLU "#\t#\t#\t#\tsend_error()\t#\t#\t#\t#\n" RESET);
 	uint8_t * payload = (uint8_t *)"Error";
 	uint16_t string_length = 5;
 	struct packet packet;
@@ -303,7 +313,7 @@ send_error(void *buffer) {
 int
 recv_sign_in (uint8_t * buffer,
 		const uint32_t ip_addr, int sockfd) {
-	printf("----------------\trecv_sign_in()\n");
+	printf(BLU "#\t#\t#\t#\trecv_sign_in()\t#\t#\t#\t#\n" RESET);
 
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
@@ -330,7 +340,7 @@ recv_sign_in (uint8_t * buffer,
 		i_ip.s_addr = ip;
 
 		if (Thrsafe_new_member(id, ip) != 0) {
-			printf("task: recv_member_list fail to add id %s\n", id);
+			printf(RED "recv_sign_in: id double %s\n" RESET, id);
 		
 		}
 
@@ -352,11 +362,12 @@ recv_sign_in (uint8_t * buffer,
 
 int
 recv_quit (uint8_t *id) {
-	printf("----------------\trecv_quit()\n");
+	printf(BLU "#\t#\t#\t#\trecv_quit()\t#\t#\t#\t#\n" RESET);
 
 	printf("@%s: quit\n", id);
 
 	if (Thrsafe_delete_member_id(id) != 0) {
+		perror(RED "recv_quit: id not found" RESET);
 		return -1;
 	}
 
@@ -365,19 +376,19 @@ recv_quit (uint8_t *id) {
 
 int
 recv_msg (uint8_t *msg, const uint32_t ip) {
-	printf("----------------\trecv_msg()\n");
+	printf(BLU "#\t#\t#\t#\trecv_msg()\t#\t#\t#\t#\n" RESET);
 	struct member messeger;
 
 	messeger = List_search_member_ip(ip);
 	
-	printf("#%s: %s\n", messeger.id, msg);
+	printf(YEL "#%s: %s\n" RESET, messeger.id, msg);
 
 	return 0;
 }
 
 int
 recv_member_list (uint8_t *buffer) {
-	printf("----------------\trecv_member_list()\n");
+	printf(BLU "#\t#\t#\t#\trecv_member_list()\t#\t#\t#\t#\n" RESET);
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
 	char *id;
@@ -394,12 +405,12 @@ recv_member_list (uint8_t *buffer) {
 		id = &buffer[5 + offset];	
 
 		if (Thrsafe_new_member(id, ip) != 0) {
-			printf("task: recv_member_list fail to add id %s\n", id);
+			printf(RED "recv_member_list: id double %s\n" RESET, id);
 		
 		}
 
-		printf("id: %s\n", id);
-		printf("ip: %u\n", ip);
+		printf(CYN "added id: %s\n" RESET, id);
+		printf(CYN "added ip: %u\n\n" RESET, ip);
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
@@ -408,11 +419,11 @@ recv_member_list (uint8_t *buffer) {
 
 int
 recv_error(uint8_t *error, const uint32_t ip) {
-	printf("----------------\trecv_error()\n");
+	printf(BLU "#\t#\t#\t#\trecv_error()\t#\t#\t#\t#\n" RESET);
 	struct member messeger;
 
 	messeger = List_search_member_ip(ip);
-	printf("#%s: %s\n", messeger.id, error);
+	printf(YEL "#%s: %s\n" RESET, messeger.id, error);
 
 	return 0;
 }
@@ -435,14 +446,14 @@ recv_from_client (void *sockfd) {
 	
     if ((num_bytes = recv(new_fd, (struct packet *)&pck, sizeof (struct packet), 0)) <= 0) {
 		if (num_bytes == 0) {
-			printf("server_thread: sockfd %d hung up\n", new_fd);
+			printf(MAG "recv_from_client: sockfd %d not there\n" RESET, new_fd);
 
 		} else {
-	        perror("recv:");
+	        perror(RED "recv_from_client: recv" RESET);
         }
 
 		if (close(new_fd)) 
-		   perror("Close: ");	
+		   perror(RED "Close: recv_from_client" RESET);	
 	} else {
 		type = pck.typ;
 
@@ -465,25 +476,25 @@ recv_from_client (void *sockfd) {
 			case SIGN_OUT:
 				recv_quit(pck.payload);
 				if (close(new_fd) != 0)
-					perror("Close: ");
+					perror(RED "Close: recv_from_client" RESET);	
 				break;
 			case MEMBER_LIST:
 				recv_member_list(pck.payload);
 				if (close(new_fd) != 0)
-					perror("Close: ");
+					perror(RED "Close: recv_from_client" RESET);	
 				break;
 			case MESSAGE:
 				recv_msg(pck.payload, client_ip.sin_addr.s_addr);
 				if (close(new_fd) != 0)
-					perror("Close: ");
+					perror(RED "Close: recv_from_client" RESET);	
 				break;
 			case ERROR:
 				recv_error(pck.payload, client_ip.sin_addr.s_addr);
 				if (close(new_fd) != 0)
-					perror("Close: ");
+					perror(RED "Close: recv_from_client" RESET);	
 				break;
 			default:
-				printf("server_thread: error type!\n");
+				printf(RED "server_thread: error type\n" RESET);
 				break;
 		}
 	}

@@ -9,6 +9,7 @@
 #include "task.h"
 #include "list.h"
 #include "list_thrsafe.h"
+#include "color.h"
 
 pthread_t serv_thread;
 pthread_t cmd_control;
@@ -18,15 +19,16 @@ struct threadpool *send_pool;
 
 void
 help_function (void) {
-	printf("# /connect <ip-adress>\t\t-- Connects to another peer\n");
+	printf("\n# /connect <ip-adress>\t\t-- Connects to another peer\n");
 	printf("# /quit\t\t\t\t-- Quits the program\n");
 	printf("# /info\t\t\t\t-- Displays list members\n");
-	printf("# /help\t\t\t\t-- Displays commands\n");
+	printf("# /help\t\t\t\t-- Displays commands\n\n");
 
 }
 
 void *
 Cmd_routine (void *args ) {
+	printf("## CMD_thread started\n");
 	char msg[1024] = "";
 	char *cmd = "";
 
@@ -100,15 +102,30 @@ Cmd_routine (void *args ) {
 int
 main (int argc, char *argv[]) {
 
+	if (argc != 3) {
+		printf(RED "usage: ./chat <ID> <Interface>\n" RESET);
+		return -1;
+	
+	}
+
+	char * arg = argv[1];
+	
+	memcpy(arg, argv[1], sizeof(argv[1]));
+	arg[strlen(arg)] = ' ';
+
+	printf("arg: %s\n", arg);
+
 	printf("-- Creating member_list...\n");
 
 	if (Thrsafe_init() != 0) {
+		return 0;
 	}
 
 	printf("-- Creating thpool - RECV...\n");
 
 	if ((recv_pool = Thpool_create()) == NULL) {
 		printf("main: recv_pool = create - fail");
+		goto thrsafe;
 	}
 
 	printf("-- Creating thpool - SEND...\n");
@@ -118,12 +135,8 @@ main (int argc, char *argv[]) {
 		goto recvfree;
 	}
 
-	if (Thrsafe_init() != 0) {
-		goto sendfree;
-	}
-
 	printf("-- Serv_thread create...\n");
-	pthread_create(&serv_thread, NULL, Server_thread, recv_pool);
+	pthread_create(&serv_thread, NULL, Server_thread, arg);
 
 	printf("-- Cmd_thread create...\n");
 	pthread_create(&cmd_control, NULL, Cmd_routine, NULL);
@@ -132,14 +145,15 @@ main (int argc, char *argv[]) {
 	pthread_cancel(serv_thread);
 	pthread_join(serv_thread, NULL);
 
-	Thrsafe_clean();
-
 	sendfree:
 		Thpool_destroy(send_pool);
 		Thpool_free(send_pool);
 	recvfree:
 		Thpool_destroy(recv_pool);
 		Thpool_free(recv_pool);
+	thrsafe:
+		Thrsafe_clean();
+
 		
 	return 0;
 

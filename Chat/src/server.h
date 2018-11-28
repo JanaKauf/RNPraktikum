@@ -11,7 +11,6 @@
 #define PORT "6100"
 #define HOLD_QUEUE 20
 
-extern int Server_init(void);
 extern void * Server_thread (void *args);
 
 
