@@ -123,10 +123,12 @@ Server_thread (void *args) {
         addr_len = sizeof client_addr;
         new_fd = accept(sock_fd, (struct sockaddr *)&client_addr, &addr_len);
 
-        if (new_fd == -1) {
-			perror("accept");
-			continue;
-		}
+		printf("sock_fd %d\n", sock_fd);
+
+        //if (new_fd == -1) {
+		//	perror("accept");
+		//	continue;
+		//}
 
         printf("server_thread: new connection from %s on sockfd %d\n",
 				inet_ntop(client_addr.ss_family,

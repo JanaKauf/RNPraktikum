@@ -23,7 +23,7 @@ Client_connect (char * server_ip) {
 	int yes = 1;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
 	if((errno = getaddrinfo(server_ip, PORT, &hints, &servlist)) != 0) {

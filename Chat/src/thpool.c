@@ -143,9 +143,6 @@ Thpool_routine(void *threadpool) {
 		pool->tasks = pool->tasks->next;
 		pool->counter--;
 
-//		if ((pthread_cond_signal(&(pool->cond))) != 0)
-//			perror("thpool: pthread_cond_broadcast");
-
 		if((errno = pthread_mutex_unlock(&(pool->mutex))) != 0)
 			perror("thpool: pthread_mutex_unlock");
 

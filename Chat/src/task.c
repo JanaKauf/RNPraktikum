@@ -309,8 +309,8 @@ recv_sign_in (uint8_t * buffer,
 	uint32_t ip;
 	uint8_t *id;
 
-	struct threadpool * send_pool;
-	send_pool = Chat_get_sendpool();
+	struct threadpool * recv_pool;
+	recv_pool = Chat_get_recvpool();
 
 	struct in_addr i_ip;
 
@@ -340,7 +340,7 @@ recv_sign_in (uint8_t * buffer,
 			job.arg = malloc(sizeof(id));
 			strcpy(job.arg, id);
 			job.mallfree = true;
-			Thpool_add_task(send_pool, job);
+			Thpool_add_task(recv_pool, job);
 		}
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;

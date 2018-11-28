@@ -14,7 +14,7 @@ pthread_t serv_thread;
 pthread_t cmd_control;
 
 struct threadpool *recv_pool;
-struct threadpool *send_pool;
+//struct threadpool *send_pool;
 
 void
 help_function (void) {
@@ -53,7 +53,8 @@ Cmd_routine (void *args ) {
 			job_msg.mallfree = true;
 			strcpy(job_msg.arg, msg);
 
-			Thpool_add_task(send_pool, job_msg);
+//			Thpool_add_task(send_pool, job_msg);
+			Thpool_add_task(recv_pool, job_msg);
 
 			printf("Sendind message...\n");
 		
@@ -68,7 +69,8 @@ Cmd_routine (void *args ) {
 				job_msg.mallfree = true;
 				strcpy(job_sign.arg, ip);
 
-				Thpool_add_task(send_pool, job_sign);
+//				Thpool_add_task(send_pool, job_sign);
+				Thpool_add_task(recv_pool, job_msg);
 
 				printf("Connecting to %s...\n", ip);
 		
@@ -77,7 +79,8 @@ Cmd_routine (void *args ) {
 				job_quit.arg = malloc(sizeof(msg));
 				job_quit.arg = msg;
 				job_quit.mallfree = true;
-				Thpool_add_task(send_pool, job_quit);
+//				Thpool_add_task(send_pool, job_quit);
+				Thpool_add_task(recv_pool, job_msg);
 
 				printf("Quiting...\n");
 				pthread_exit(0);
@@ -113,10 +116,10 @@ main (int argc, char *argv[]) {
 
 	printf("-- Creating thpool - SEND...\n");
 
-	if ((send_pool = Thpool_create()) == NULL) {
-		printf("main: send_pool = create - fail");
-		goto recvfree;
-	}
+//	if ((send_pool = Thpool_create()) == NULL) {
+//		printf("main: send_pool = create - fail");
+//		goto recvfree;
+//	}
 
 	if (Thrsafe_init() != 0) {
 		goto sendfree;
@@ -135,13 +138,13 @@ main (int argc, char *argv[]) {
 	Thrsafe_clean();
 
 	Thpool_destroy(recv_pool);
-	Thpool_destroy(send_pool);
+//	Thpool_destroy(send_pool);
 
 	sendfree:
-		Thpool_destroy(send_pool);
-		Thpool_free(send_pool);
-	recvfree:
-		Thpool_destroy(recv_pool);
+//		Thpool_destroy(send_pool);
+//		Thpool_free(send_pool);
+//	recvfree:
+//		Thpool_destroy(recv_pool);
 		Thpool_free(recv_pool);
 		
 	return 0;
@@ -154,7 +157,7 @@ Chat_get_recvpool(void) {
 	return recv_pool;
 }
 
-struct threadpool *
-Chat_get_sendpool (void) {
-	return send_pool;
-}
+//struct threadpool *
+//Chat_get_sendpool (void) {
+//	return send_pool;
+//}
