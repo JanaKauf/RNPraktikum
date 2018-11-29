@@ -25,6 +25,24 @@
 
 #define PORT "6100"
 
+//pthread_mutex_t send_mutex;
+//pthread_mutex_t recv_mutex;
+//
+//int
+//Tasks_start() {
+//	if (pthread_mutex_init(&send_mutex, NULL) != 0) {
+//		perror("init_thrsafe: send_mutex");
+//		return -1;
+//	}
+//
+//	if (pthread_mutex_init(&recv_mutex, NULL) != 0) {
+//		perror("init_thrsafe: recv_mutex");
+//		return -1;
+//	}
+//
+//	return 0;
+//}
+
 
 //######################SEND_TASKS###############################
 
@@ -50,7 +68,6 @@ send_all_data (struct packet *packet, int *length, int sockfd) {
 
 void
 send_to_server (struct packet* packet, int sockfd) {
-//	struct args_send *send_args = args;
 	int length = sizeof(struct packet);
 
 	if (send_all_data(packet, &length, sockfd) == -1) {
@@ -73,17 +90,17 @@ send_to_server (struct packet* packet, int sockfd) {
 
 
 void resend_packet(void * arg) {
-	//send failed so we try to connect and send again
-	struct args_send* send_args = arg;
-
-	struct member* p = List_get_list();
-
+//	send failed so we try to connect and send again
+//	struct args_send* send_args = arg;
+//
+//	struct member* p = List_get_list();
+//
 //	connect_to_server(List_get_ip_by_sockfd(*send_args->sock_fd))->ip);
-
+//
 //	if(send(*conn_args.sock_fd, send_args->buf, sizeof(*send_args->buf), 0) < 0) {
 //		perror("resend_packet: ");
 //	}
-
+//
 //	disconnect_from_server(&sock_fd);
 }
 
@@ -96,8 +113,7 @@ send_sign_in (void * arg) {
 	char * ip = (char *) arg;
 	struct packet packet;
 	struct member *p = List_get_list();
-	int num_of_members = List_no_of_members();
-	uint16_t bufsize = ((num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1);
+	uint16_t bufsize = ((List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1);
 
 	int sock_fd = Client_connect(ip);
 
@@ -111,15 +127,13 @@ send_sign_in (void * arg) {
 	packet.version = VERSION; //version
 	packet.typ = SIGN_IN; //type
 	packet.length = htons(bufsize);
-
+	packet.payload[0] = (uint8_t)List_no_of_members();
 
 	int ip_addr_offset = 1;
 	int id_offset;
 
 	//set content of member list
-	uint8_t length_in_byte = (uint8_t)num_of_members;
-	packet.payload[0] = length_in_byte;
-	for(i = 0; i < num_of_members; i++) {
+	for(i = 0; i < List_no_of_members(); i++) {
 		//store in network byteorder
 		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
 		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
@@ -147,8 +161,6 @@ send_sign_in (void * arg) {
 void
 send_quit (void * args) {
 	printf(BLU "#\t#\t#\t#\tsend_quit()\t#\t#\t#\t#\n" RESET);
-	struct args_send* send_args = args;
-	int i;
 	struct packet packet;
 
 	struct member *me = List_get_list();
@@ -228,8 +240,7 @@ void
 send_member_list (void * arg) {
 	printf(BLU "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
 	struct member *p = List_get_list();
-	int num_of_members = List_no_of_members();
-	uint16_t bufsize = (num_of_members * SIZE_OF_MEMBER_IN_BYTES) + 1;
+	uint16_t bufsize = (List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
 	uint8_t * id = (uint8_t *)arg;
 
@@ -249,6 +260,7 @@ send_member_list (void * arg) {
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(bufsize); //length
+	packet.payload[0] = (uint8_t)List_no_of_members();
 
 	int i;
 	int j;
@@ -257,9 +269,7 @@ send_member_list (void * arg) {
 	int id_offset;
 
 	//set content of member list
-	uint8_t length_in_byte = (uint8_t)num_of_members;
-	packet.payload[0] = length_in_byte;
-	for(i = 0; i < num_of_members; i++) {
+	for(i = 0; i < List_no_of_members(); i++) {
 		//store in network byteorder
 		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
 		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
@@ -313,17 +323,17 @@ send_member_list_to_my_members (void * args) {
 	struct packet packet;
 	struct member *p;
 	struct in_addr i_ip;
+	int sock_fd;
 
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(sizeof(payload)); //length
 	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
 
-//	int i;
-//	for (i = 0; i < sizeof(payload); i++) {
-//		packet.payload[i] = payload[i];
-//	}
-	packet.payload = payload;
+	int i;
+	for (i = 0; i < sizeof(payload); i++) {
+		packet.payload[i] = payload[i];
+	}
 
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
 			i_ip.s_addr = p->ip;
@@ -362,7 +372,7 @@ recv_sign_in (uint8_t * buffer,
 	struct task_t job;
 
 	if (List_no_of_members() > 1) {
-		job.routine_for_task = send_member_list_to_my_members();
+		job.routine_for_task = send_member_list_to_my_members;
 		job.arg = malloc(sizeof(buffer));
 		strcpy(job.arg, buffer);
 		job.mallfree = true;
@@ -442,7 +452,7 @@ recv_member_list (uint8_t *buffer) {
 	struct task_t job;
 
 	if (List_no_of_members() > 1) {
-		job.routine_for_task = send_member_list_to_my_members();
+		job.routine_for_task = send_member_list_to_my_members;
 		job.arg = malloc(sizeof(buffer));
 		strcpy(job.arg, buffer);
 		job.mallfree = true;
@@ -488,11 +498,6 @@ void
 recv_from_client (void *sockfd) {
 	packet_t pck;
 
-	uint8_t type;	
-	uint16_t length;
-	uint32_t crc;
-	uint8_t * payload;
-
 	int num_bytes;
 
 	int new_fd = *(int *)(sockfd);
@@ -511,21 +516,18 @@ recv_from_client (void *sockfd) {
 		if (close(new_fd)) 
 		   perror(RED "Close: recv_from_client" RESET);	
 	} else {
-		type = pck.typ;
 
-		printf("type: %u\n", type);
+		printf("type: %u\n", pck.typ);
 
-		length = ntohs(pck.length);
-		printf("length: %u\n", length);
+		printf("length: %u\n", ntohs(pck.length));
 
-		crc = ntohl(pck.crc);
-		printf("crc: %u\n", crc);
+		printf("crc: %u\n", ntohl(pck.crc));
 
 		getpeername(new_fd,
 				(struct sockaddr *)&client_ip,
 				&addr_size);
 				
-		switch (type) {
+		switch (pck.typ) {
 			case SIGN_IN:
 				recv_sign_in(pck.payload, client_ip.sin_addr.s_addr, new_fd);
 				break;

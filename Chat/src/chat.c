@@ -110,7 +110,7 @@ main (int argc, char *argv[]) {
 
 	char * arg = argv[1];
 	
-	memcpy(arg, argv[1], sizeof(argv[1]));
+	strcpy(arg, argv[1]);
 	arg[strlen(arg)] = ' ';
 
 	printf("arg: %s\n", arg);
@@ -145,9 +145,9 @@ main (int argc, char *argv[]) {
 	pthread_cancel(serv_thread);
 	pthread_join(serv_thread, NULL);
 
-	sendfree:
-		Thpool_destroy(send_pool);
-		Thpool_free(send_pool);
+	Thpool_destroy(send_pool);
+	Thpool_free(send_pool);
+
 	recvfree:
 		Thpool_destroy(recv_pool);
 		Thpool_free(recv_pool);

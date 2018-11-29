@@ -22,7 +22,6 @@ Client_connect (char * server_ip) {
 	printf("Connect %s\n", server_ip);
 	struct addrinfo *servlist, *p;
 	struct addrinfo hints;
-	int yes = 1;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;

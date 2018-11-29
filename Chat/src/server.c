@@ -35,10 +35,9 @@ struct sockaddr_storage their_addr;
 int yes = 1;
 
 int
-Server_init(char * id, char * interface) {
+Server_init(uint8_t * id, uint8_t * interface) {
 	struct addrinfo *servlist, *p;
 
-	char ip[INET_ADDRSTRLEN];
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -78,7 +77,7 @@ Server_init(char * id, char * interface) {
 	}
 
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, interface);	
+	strcpy(ifr.ifr_name, (char *)interface);
 
 	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
 		perror("ioctl: ");
@@ -109,8 +108,8 @@ Server_thread (void *args) {
 	socklen_t addr_len;
 	char client_ip[INET_ADDRSTRLEN];
 
-	char * id = strtok((char *)args, " ");
-	char * interface = strtok(NULL, "\0");
+	uint8_t * id = strtok((uint8_t *)args, " ");
+	uint8_t * interface = strtok(NULL, "\0");
 
 	struct threadpool *pool = Chat_get_recvpool();
 	struct task_t job;
