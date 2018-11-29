@@ -136,7 +136,9 @@ List_delete_member (uint8_t id[16]) {
 		return -1;
 	}
 
-	p->next = del_member->next;
+	if (p != NULL) {
+		p->next = del_member->next;
+	}
 	free(del_member);
 	counter--;
 

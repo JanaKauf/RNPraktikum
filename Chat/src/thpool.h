@@ -1,10 +1,9 @@
 #ifndef _THPOOL_H
 #define _THPOOL_H
-//#include "taskqueue.h"
 #include <pthread.h>
 #include <stdbool.h>
 
-#define NUM_THREADS 1
+#define NUM_THREADS 3
 #define NUM_TASKS	10
 
 struct task_t {
