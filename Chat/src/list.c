@@ -125,9 +125,9 @@ List_delete_member (uint8_t id[16]) {
 		return -1;
 	}
 
-	for (p = list->next; p != NULL; p = p->next){
-		if (strncmp(p->id, id, 16) == 0) {
-			del_member = p;
+	for (p = list; p->next != NULL; p = p->next){
+		if (strncmp(p->next->id, id, 16) == 0) {
+			del_member = p->next;
 			break;
 		}
 	}
@@ -139,6 +139,8 @@ List_delete_member (uint8_t id[16]) {
 
 	if (del_member->next != NULL) {
 		p->next = del_member->next;
+	} else {
+		p->next = NULL;
 	}
 
 	free(del_member);
