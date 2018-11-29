@@ -8,7 +8,6 @@
 #include "thpool.h"
 #include "task.h"
 #include "list.h"
-#include "list_thrsafe.h"
 #include "color.h"
 
 pthread_t serv_thread;
@@ -117,7 +116,7 @@ main (int argc, char *argv[]) {
 
 	printf(MAG "-- Creating member_list...\n" RESET);
 
-	if (Thrsafe_init() != 0) {
+	if (Tasks_start() != 0) {
 		return 0;
 	}
 
@@ -152,7 +151,7 @@ main (int argc, char *argv[]) {
 		Thpool_destroy(recv_pool);
 		Thpool_free(recv_pool);
 	thrsafe:
-		Thrsafe_clean();
+		Tasks_clean();
 
 		
 	return 0;

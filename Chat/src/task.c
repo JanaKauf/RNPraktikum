@@ -14,7 +14,7 @@
 
 #include "packet.h"
 #include "list.h"
-#include "list_thrsafe.h"
+//#include "list_thrsafe.h"
 #include "task.h"
 #include "client.h"
 #include "chat.h"
@@ -25,23 +25,30 @@
 
 #define PORT "6100"
 
-//pthread_mutex_t send_mutex;
-//pthread_mutex_t recv_mutex;
-//
-//int
-//Tasks_start() {
-//	if (pthread_mutex_init(&send_mutex, NULL) != 0) {
-//		perror("init_thrsafe: send_mutex");
-//		return -1;
-//	}
-//
-//	if (pthread_mutex_init(&recv_mutex, NULL) != 0) {
-//		perror("init_thrsafe: recv_mutex");
-//		return -1;
-//	}
-//
-//	return 0;
-//}
+pthread_mutex_t mutex;
+
+int
+Tasks_start() {
+	if (pthread_mutex_init(&mutex, NULL) != 0) {
+		perror("Tasks_start: send_mutex");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
+Tasks_clean (void) {
+
+	if (List_delete()) {
+		perror("Tasks_start: ");
+		return -1;
+	}
+	pthread_mutex_destroy(&mutex);
+
+	return 0;
+
+}
 
 
 //######################SEND_TASKS###############################
@@ -112,6 +119,7 @@ send_sign_in (void * arg) {
 	int j;
 	char * ip = (char *) arg;
 	struct packet packet;
+	pthread_mutex_lock(&mutex);
 	struct member *p = List_get_list();
 	uint16_t bufsize = ((List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1);
 
@@ -154,6 +162,7 @@ send_sign_in (void * arg) {
 
 	if (close(sock_fd) != 0)
 		perror(RED "Close: send_sign_in" RESET);
+	pthread_mutex_unlock(&mutex);
 	//TODO put sock_fd in memberlist?
 
 }
@@ -177,6 +186,7 @@ send_quit (void * args) {
 
 	int sock_fd;
 
+	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
 		i_ip.s_addr = p->ip;
 
@@ -191,6 +201,7 @@ send_quit (void * args) {
 		if (close(sock_fd) != 0)
 			perror(RED "Close: send_quit" RESET);
 	}
+	pthread_mutex_unlock(&mutex);
 
 }
 
@@ -201,6 +212,7 @@ send_msg (void * buffer) {
 	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0");
 	uint16_t bufsize = sizeof(msg);
+	pthread_mutex_lock(&mutex);
 	struct member messeger = List_search_member_id(id);
 	int sock_fd;
 	struct packet packet;
@@ -234,11 +246,13 @@ send_msg (void * buffer) {
 
 	if (close(sock_fd) != 0)
 		perror(RED "Close: send_msg" RESET);
+	pthread_mutex_unlock(&mutex);
 }
 
 void
 send_member_list (void * arg) {
 	printf(BLU "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
+	pthread_mutex_lock(&mutex);
 	struct member *p = List_get_list();
 	uint16_t bufsize = (List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
@@ -262,12 +276,11 @@ send_member_list (void * arg) {
 	packet.length = htons(bufsize); //length
 	packet.payload[0] = (uint8_t)List_no_of_members();
 
-	int i;
-	int j;
-
 	int ip_addr_offset = 1;
 	int id_offset;
 
+	int i;
+	int j;
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
 		//store in network byteorder
@@ -289,6 +302,7 @@ send_member_list (void * arg) {
 	send_to_server(&packet, sock_fd);
 	if (close(sock_fd) != 0)
 		perror(RED "Close: send_member_list" RESET);
+	pthread_mutex_unlock(&mutex);
 }
 
 void
@@ -335,20 +349,22 @@ send_member_list_to_my_members (void * args) {
 		packet.payload[i] = payload[i];
 	}
 
+	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
-			i_ip.s_addr = p->ip;
+		i_ip.s_addr = p->ip;
 
-			sock_fd = Client_connect(inet_ntoa(i_ip));
-			if (sock_fd == -1) {
-				perror(RED "Client_connect: send_quit" RESET);
-				continue ;
-			}
+		sock_fd = Client_connect(inet_ntoa(i_ip));
+		if (sock_fd == -1) {
+			perror(RED "Client_connect: send_quit" RESET);
+			continue ;
+		}
 
-			send_to_server(&packet, sock_fd);
+		send_to_server(&packet, sock_fd);
 
-			if (close(sock_fd) != 0)
-				perror(RED "Close: send_quit" RESET);
+		if (close(sock_fd) != 0)
+			perror(RED "Close: send_quit" RESET);
 	}
+	pthread_mutex_unlock(&mutex);
 
 }
 
@@ -371,14 +387,6 @@ recv_sign_in (uint8_t * buffer,
 
 	struct task_t job;
 
-	if (List_no_of_members() > 1) {
-		job.routine_for_task = send_member_list_to_my_members;
-		job.arg = malloc(sizeof(buffer));
-		strcpy(job.arg, buffer);
-		job.mallfree = true;
-		Thpool_add_task(send_pool, job);
-	}
-
 	int offset = 0;
 
 	int i;
@@ -392,10 +400,12 @@ recv_sign_in (uint8_t * buffer,
 		
 		i_ip.s_addr = ip;
 
-		if (Thrsafe_new_member(id, ip) != 0) {
+		pthread_mutex_lock(&mutex);
+		if (List_new_member(id, ip) != 0) {
 			printf(RED "recv_sign_in: id double %s or ip double %u\n" RESET, id, ip);
 		
 		}
+		pthread_mutex_unlock(&mutex);
 
 		if (i == 0) {
 			printf("sign in: %s sock_fd %d\n", id, sockfd);	
@@ -405,6 +415,16 @@ recv_sign_in (uint8_t * buffer,
 			strcpy(job.arg, id);
 			job.mallfree = true;
 			Thpool_add_task(send_pool, job);
+
+			struct member sign = List_search_member_id(id);
+
+			if (List_no_of_members() > 1 && sign.ip == 0) {
+				job.routine_for_task = send_member_list_to_my_members;
+				job.arg = malloc(sizeof(buffer));
+				strcpy(job.arg, buffer);
+				job.mallfree = true;
+				Thpool_add_task(send_pool, job);
+			}
 		}
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
@@ -419,10 +439,12 @@ recv_quit (uint8_t *id) {
 
 	printf("@%s: quit\n", id);
 
-	if (Thrsafe_delete_member_id(id) != 0) {
+	pthread_mutex_lock(&mutex);
+	if (List_delete_member(id) != 0) {
 		perror(RED "recv_quit: id not found" RESET);
 		return -1;
 	}
+	pthread_mutex_unlock(&mutex);
 
 	return 0;
 }
@@ -432,7 +454,9 @@ recv_msg (uint8_t *msg, const uint32_t ip) {
 	printf(BLU "#\t#\t#\t#\trecv_msg()\t#\t#\t#\t#\n" RESET);
 	struct member messeger;
 
+	pthread_mutex_lock(&mutex);
 	messeger = List_search_member_ip(ip);
+	pthread_mutex_unlock(&mutex);
 	
 	printf(YEL "#%s: %s\n" RESET, messeger.id, msg);
 
@@ -451,13 +475,13 @@ recv_member_list (uint8_t *buffer) {
 
 	struct task_t job;
 
-	if (List_no_of_members() > 1) {
-		job.routine_for_task = send_member_list_to_my_members;
-		job.arg = malloc(sizeof(buffer));
-		strcpy(job.arg, buffer);
-		job.mallfree = true;
-		Thpool_add_task(send_pool, job);
-	}
+//	if (List_no_of_members() > 1) {
+//		job.routine_for_task = send_member_list_to_my_members;
+//		job.arg = malloc(sizeof(buffer));
+//		strcpy(job.arg, buffer);
+//		job.mallfree = true;
+//		Thpool_add_task(send_pool, job);
+//	}
 
 	int offset = 0;
 
@@ -470,10 +494,24 @@ recv_member_list (uint8_t *buffer) {
 
 		id = &buffer[5 + offset];	
 
-		if (Thrsafe_new_member(id, ip) != 0) {
+		pthread_mutex_lock(&mutex);
+		if (List_new_member(id, ip) != 0) {
 			printf(RED "recv_member_list: id double %s or ip double %u\n" RESET, id, ip);
 		
 		}
+		if (i == 0) {
+			struct member sign = List_search_member_id(id);
+
+			if (List_no_of_members() > 1 && sign.ip == 0) {
+				job.routine_for_task = send_member_list_to_my_members;
+				job.arg = malloc(sizeof(buffer));
+				strcpy(job.arg, buffer);
+				job.mallfree = true;
+				Thpool_add_task(send_pool, job);
+			}
+		}
+
+		pthread_mutex_unlock(&mutex);
 
 		printf(CYN "added id: %s\n" RESET, id);
 		printf(CYN "added ip: %u\n\n" RESET, ip);
@@ -488,7 +526,9 @@ recv_error(uint8_t *error, const uint32_t ip) {
 	printf(BLU "#\t#\t#\t#\trecv_error()\t#\t#\t#\t#\n" RESET);
 	struct member messeger;
 
+	pthread_mutex_lock(&mutex);
 	messeger = List_search_member_ip(ip);
+	pthread_mutex_unlock(&mutex);
 	printf(YEL "#%s: %s\n" RESET, messeger.id, error);
 
 	return 0;
