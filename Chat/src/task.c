@@ -393,7 +393,7 @@ recv_sign_in (uint8_t * buffer,
 		i_ip.s_addr = ip;
 
 		if (Thrsafe_new_member(id, ip) != 0) {
-			printf(RED "recv_sign_in: id double %s\n" RESET, id);
+			printf(RED "recv_sign_in: id double %s or ip double %u\n" RESET, id, ip);
 		
 		}
 
@@ -471,7 +471,7 @@ recv_member_list (uint8_t *buffer) {
 		id = &buffer[5 + offset];	
 
 		if (Thrsafe_new_member(id, ip) != 0) {
-			printf(RED "recv_member_list: id double %s\n" RESET, id);
+			printf(RED "recv_member_list: id double %s or ip double %u\n" RESET, id, ip);
 		
 		}
 
