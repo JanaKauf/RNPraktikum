@@ -87,6 +87,7 @@ void resend_packet(void * arg) {
 //	disconnect_from_server(&sock_fd);
 }
 
+
 void
 send_sign_in (void * arg) {
 	printf(BLU "#\t#\t#\t#\tsend_sign_in()\t#\t#\t#\t#\n" RESET);
@@ -156,15 +157,13 @@ send_quit (void * args) {
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(ID_LENGTH); //length
-	packet.crc = htonl(crc_32(me->id, ID_LENGTH)); //TODO use define???
+	packet.crc = htonl(crc_32(me->id, ID_LENGTH));
 	strcpy(packet.payload, me->id);
 
 	struct member * p = NULL;
 	struct in_addr i_ip;
 
 	int sock_fd;
-
-//	TODO put sends in taskqueue? or send_quit gets called more often in other function?
 
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
 		i_ip.s_addr = p->ip;
@@ -308,6 +307,42 @@ send_error(void *buffer) {
 }
 
 
+void
+send_member_list_to_my_members (void * args) {
+	uint8_t * payload = (uint8_t *)args;
+	struct packet packet;
+	struct member *p;
+	struct in_addr i_ip;
+
+	packet.version = VERSION; //version
+	packet.typ = MEMBER_LIST; //type
+	packet.length = htons(sizeof(payload)); //length
+	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
+
+//	int i;
+//	for (i = 0; i < sizeof(payload); i++) {
+//		packet.payload[i] = payload[i];
+//	}
+	packet.payload = payload;
+
+	for (p = List_get_list()->next; p != NULL; p = p->next) {
+			i_ip.s_addr = p->ip;
+
+			sock_fd = Client_connect(inet_ntoa(i_ip));
+			if (sock_fd == -1) {
+				perror(RED "Client_connect: send_quit" RESET);
+				continue ;
+			}
+
+			send_to_server(&packet, sock_fd);
+
+			if (close(sock_fd) != 0)
+				perror(RED "Close: send_quit" RESET);
+	}
+
+}
+
+
 
 //######################RECV_TASKS###############################
 int
@@ -325,6 +360,14 @@ recv_sign_in (uint8_t * buffer,
 	struct in_addr i_ip;
 
 	struct task_t job;
+
+	if (List_no_of_members() > 1) {
+		job.routine_for_task = send_member_list_to_my_members();
+		job.arg = malloc(sizeof(buffer));
+		strcpy(job.arg, buffer);
+		job.mallfree = true;
+		Thpool_add_task(send_pool, job);
+	}
 
 	int offset = 0;
 
@@ -392,6 +435,19 @@ recv_member_list (uint8_t *buffer) {
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
 	char *id;
+
+	struct threadpool * send_pool;
+	send_pool = Chat_get_sendpool();
+
+	struct task_t job;
+
+	if (List_no_of_members() > 1) {
+		job.routine_for_task = send_member_list_to_my_members();
+		job.arg = malloc(sizeof(buffer));
+		strcpy(job.arg, buffer);
+		job.mallfree = true;
+		Thpool_add_task(send_pool, job);
+	}
 
 	int offset = 0;
 
