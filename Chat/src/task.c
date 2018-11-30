@@ -26,6 +26,7 @@
 #define PORT "6100"
 
 pthread_mutex_t mutex;
+bool sign;
 
 int
 Tasks_start() {
@@ -33,6 +34,8 @@ Tasks_start() {
 		perror("Tasks_start: send_mutex");
 		return -1;
 	}
+
+	sign = false;
 
 	return 0;
 }
@@ -159,6 +162,8 @@ send_sign_in (void * arg) {
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
 	send_to_server(&packet, sock_fd);
+
+	sign = true;
 
 	if (close(sock_fd) != 0)
 		perror(RED "Close: send_sign_in" RESET);
@@ -416,9 +421,7 @@ recv_sign_in (uint8_t * buffer,
 			job.mallfree = true;
 			Thpool_add_task(send_pool, job);
 
-			struct member sign = List_search_member_id(id);
-
-			if (List_no_of_members() > 1 && sign.ip == 0) {
+			if (List_no_of_members() > 1 && sign ) {
 				job.routine_for_task = send_member_list_to_my_members;
 				job.arg = malloc(sizeof(buffer));
 				strcpy(job.arg, buffer);
@@ -429,6 +432,8 @@ recv_sign_in (uint8_t * buffer,
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
+
+	sign = false;
 
 	return 0;
 }
@@ -475,14 +480,6 @@ recv_member_list (uint8_t *buffer) {
 
 	struct task_t job;
 
-//	if (List_no_of_members() > 1) {
-//		job.routine_for_task = send_member_list_to_my_members;
-//		job.arg = malloc(sizeof(buffer));
-//		strcpy(job.arg, buffer);
-//		job.mallfree = true;
-//		Thpool_add_task(send_pool, job);
-//	}
-
 	int offset = 0;
 
 	int i;
@@ -500,9 +497,8 @@ recv_member_list (uint8_t *buffer) {
 		
 		}
 		if (i == 0) {
-			struct member sign = List_search_member_id(id);
 
-			if (List_no_of_members() > 1 && sign.ip == 0) {
+			if (List_no_of_members() > 1 && sign) {
 				job.routine_for_task = send_member_list_to_my_members;
 				job.arg = malloc(sizeof(buffer));
 				strcpy(job.arg, buffer);
@@ -517,6 +513,8 @@ recv_member_list (uint8_t *buffer) {
 		printf(CYN "added ip: %u\n\n" RESET, ip);
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
+
+	sign = false;
 
 	return 0;
 }
