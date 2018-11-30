@@ -421,7 +421,7 @@ recv_sign_in (uint8_t * buffer,
 			job.mallfree = true;
 			Thpool_add_task(send_pool, job);
 
-			if (List_no_of_members() > 1 && sign ) {
+			if (List_no_of_members() > 1) {
 				job.routine_for_task = send_member_list_to_my_members;
 				job.arg = malloc(sizeof(buffer));
 				strcpy(job.arg, buffer);
@@ -432,8 +432,6 @@ recv_sign_in (uint8_t * buffer,
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
-
-	sign = false;
 
 	return 0;
 }
@@ -509,8 +507,8 @@ recv_member_list (uint8_t *buffer) {
 
 		pthread_mutex_unlock(&mutex);
 
-		printf(CYN "added id: %s\n" RESET, id);
-		printf(CYN "added ip: %u\n\n" RESET, ip);
+		printf(CYN "recv_member_list id: %s\n" RESET, id);
+		printf(CYN "recv_member_list ip: %u\n\n" RESET, ip);
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
