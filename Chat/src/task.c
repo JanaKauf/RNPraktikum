@@ -350,7 +350,7 @@ send_member_list_to_my_members (void * args) {
 	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
 
 	int i;
-	for (i = 0; i < sizeof(payload); i++) {
+	for (i = 0; i <= sizeof(payload); i++) {
 		packet.payload[i] = payload[i];
 	}
 
@@ -401,7 +401,7 @@ recv_sign_in (uint8_t * buffer,
 					| buffer[3 + offset] << 8
 					| buffer[4 + offset];
 
-		id = &buffer[5 + offset];	
+		id = &buffer[5 + offset];
 		
 		i_ip.s_addr = ip;
 
