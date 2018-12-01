@@ -184,7 +184,7 @@ send_quit (void * args) {
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(ID_LENGTH); //length
 	packet.crc = htonl(crc_32(me->id, ID_LENGTH));
-	strcpy(packet.payload, me->id);
+	strcpy((char*)packet.payload, (char*)me->id);
 
 	struct member * p = NULL;
 	struct in_addr i_ip;
@@ -213,7 +213,7 @@ send_quit (void * args) {
 void
 send_msg (void * buffer) {
 	printf(BLU "#\t#\t#\t#\tsend_msg()\t#\t#\t#\t#\n" RESET);
-	uint8_t* id = strtok(buffer, " \n\0");
+	uint8_t* id = (uint8_t*)strtok(buffer, " \n\0");
 	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0");
 	uint16_t bufsize = sizeof(msg);
@@ -245,7 +245,7 @@ send_msg (void * buffer) {
 	packet.length = htons(bufsize);
 	packet.crc = htonl(crc_32(msg, bufsize));
 
-	strcpy(packet.payload, msg);
+	strcpy((char*)packet.payload, (char*)msg);
 
 	send_to_server(&packet, sock_fd);
 
@@ -312,8 +312,9 @@ send_member_list (void * arg) {
 
 void
 send_error(void *buffer) {
+	//TODO connect send and disconnect
 	printf(BLU "#\t#\t#\t#\tsend_error()\t#\t#\t#\t#\n" RESET);
-	uint8_t * payload = (uint8_t *)"Error";
+	uint8_t* payload = buffer;
 	uint16_t string_length = 5;
 	struct packet packet;
 	int sock_fd;
@@ -323,7 +324,7 @@ send_error(void *buffer) {
 	packet.typ = ERROR; //type
 	packet.length = htons(string_length); //length
 	packet.crc = crc_32(payload, string_length);
-	strcpy(packet.payload, payload);
+	strcpy((char*)packet.payload, (char*)payload);
 
 //	Client_connect();
 //	if (sock_fd == -1) {
@@ -388,6 +389,7 @@ recv_sign_in (uint8_t * buffer,
 	struct threadpool * send_pool;
 	send_pool = Chat_get_sendpool();
 
+	//TODO i_ip unused?
 	struct in_addr i_ip;
 
 	struct task_t job;
@@ -417,14 +419,14 @@ recv_sign_in (uint8_t * buffer,
 
 			job.routine_for_task = send_member_list;
 			job.arg = malloc(sizeof(id));
-			strcpy(job.arg, id);
+			strcpy((char*)job.arg, (char*)id);
 			job.mallfree = true;
 			Thpool_add_task(send_pool, job);
 
 			if (List_no_of_members() > 1) {
 				job.routine_for_task = send_member_list_to_my_members;
 				job.arg = malloc(sizeof(buffer));
-				strcpy(job.arg, buffer);
+				strcpy((char*)job.arg, (char*)buffer);
 				job.mallfree = true;
 				Thpool_add_task(send_pool, job);
 			}
@@ -471,7 +473,7 @@ recv_member_list (uint8_t *buffer) {
 	printf(BLU "#\t#\t#\t#\trecv_member_list()\t#\t#\t#\t#\n" RESET);
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
-	char *id;
+	uint8_t *id;
 
 	struct threadpool * send_pool;
 	send_pool = Chat_get_sendpool();
@@ -499,7 +501,7 @@ recv_member_list (uint8_t *buffer) {
 			if (List_no_of_members() > 1 && sign) {
 				job.routine_for_task = send_member_list_to_my_members;
 				job.arg = malloc(sizeof(buffer));
-				strcpy(job.arg, buffer);
+				strcpy((char*)job.arg, (char*)buffer);
 				job.mallfree = true;
 				Thpool_add_task(send_pool, job);
 			}

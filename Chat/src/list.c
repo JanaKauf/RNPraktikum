@@ -47,7 +47,7 @@ List_new_member (uint8_t id[16], uint32_t ip) {
 
 
 	for (p = list; p != NULL; p = p->next){
-		if (((strcmp(id, p->id)) == 0) || p->ip == ip) {
+		if (((strcmp((char*)id, (char*)p->id)) == 0) || p->ip == ip) {
 			errno = EPERM;
 			return -1;
 		}
@@ -86,7 +86,7 @@ List_search_member_id (uint8_t id[16]) {
 	}
 
 	for (p = list; p != NULL; p = p->next){
-		if (strncmp(id, p->id, 16) == 0) {
+		if (strncmp((char*)id, (char*)p->id, 16) == 0) {
 			search = *p;
 			return search;
 		}
@@ -128,7 +128,7 @@ List_delete_member (uint8_t id[16]) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if (strncmp(p->next->id, id, 16) == 0) {
+		if (strncmp((char*)p->next->id, (char*)id, 16) == 0) {
 			del_member = p->next;
 			break;
 		}

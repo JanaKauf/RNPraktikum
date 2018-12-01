@@ -108,8 +108,8 @@ Server_thread (void *args) {
 	socklen_t addr_len;
 	char client_ip[INET_ADDRSTRLEN];
 
-	uint8_t * id = strtok((uint8_t *)args, " ");
-	uint8_t * interface = strtok(NULL, "\0");
+	uint8_t * id = (uint8_t*)strtok((char*)args, " ");
+	uint8_t * interface = (uint8_t*)strtok(NULL, "\0");
 
 	struct threadpool *pool = Chat_get_recvpool();
 	struct task_t job;
