@@ -168,7 +168,7 @@ send_sign_in (void * arg) {
 	if (close(sock_fd) != 0)
 		perror(RED "Close: send_sign_in" RESET);
 	pthread_mutex_unlock(&mutex);
-	//TODO put sock_fd in memberlist?
+
 
 }
 
@@ -533,7 +533,7 @@ recv_error(uint8_t *error, const uint32_t ip) {
 void
 recv_from_client (void *sockfd) {
 	packet_t pck;
-
+	uint32_t crc;
 	int num_bytes;
 
 	int new_fd = *(int *)(sockfd);
@@ -557,7 +557,11 @@ recv_from_client (void *sockfd) {
 
 		printf("length: %u\n", ntohs(pck.length));
 
-		printf("crc: %u\n", ntohl(pck.crc));
+		crc = ntohl(pck.crc);
+		printf("crc: %u\n", crc);
+		if(crc_is_equal(&pck.payload, pck.length, crc)) {
+			//TODO add send_error to taskqueue
+		}
 
 		getpeername(new_fd,
 				(struct sockaddr *)&client_ip,
@@ -593,6 +597,16 @@ recv_from_client (void *sockfd) {
 		}
 	}
 
+}
+
+
+//TODO put function in a different file???
+/**
+ * returns 1 if crcToCheck and crc computed with strToCheck are equal else
+ * returns 0
+ */
+int crc_is_equal(uint8_t* strToCheck, uint16_t strLength, uint32_t crcToCheck) {
+	return crc_32(strToCheck, strLength) == crcToCheck;
 }
 
 

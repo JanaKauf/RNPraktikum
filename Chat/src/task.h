@@ -1,6 +1,8 @@
 #ifndef _TASK_H
 #define _TASK_H
 
+#include <stdint.h>
+
 #define SIGN_IN 1
 #define SIGN_OUT 2
 #define MEMBER_LIST 3
@@ -18,7 +20,7 @@ extern void resend_msg(void * arg);
 //###################RECV_TASKS#######################
 
 extern void recv_from_client(void * sockfd);
-
+extern int crc_is_equal(uint8_t* strToCompare, uint16_t strLength, uint32_t crcToCheck);
 /*
 extern void recv_quit(void * buf);
 extern void recv_msg(void * buf);
