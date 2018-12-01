@@ -96,6 +96,7 @@ Thpool_add_task (struct threadpool *pool, const struct task_t job) {
 	p->next = new;
 	pool->counter++;
 	
+
 	if ((pthread_cond_signal(&(pool->cond))) != 0)
 		perror("thpool: pthread_cond_broadcast");
 

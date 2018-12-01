@@ -559,8 +559,15 @@ recv_from_client (void *sockfd) {
 
 		crc = ntohl(pck.crc);
 		printf("crc: %u\n", crc);
-		if(crc_is_equal(&pck.payload, pck.length, crc)) {
-			//TODO add send_error to taskqueue
+		if(!crc_is_equal((uint8_t *)&pck.payload, pck.length, crc)) {
+			struct task_t job_error_crc;
+			uint8_t* error_type = malloc(sizeof(uint8_t));
+			*error_type = htons(ERROR_WRONG_CRC);
+
+			job_error_crc.arg = error_type;
+			job_error_crc.mallfree = true;
+			job_error_crc.routine_for_task = send_error;
+			Thpool_add_task(send_pool, job_error_crc);
 		}
 
 		getpeername(new_fd,
@@ -602,8 +609,8 @@ recv_from_client (void *sockfd) {
 
 //TODO put function in a different file???
 /**
- * returns 1 if crcToCheck and crc computed with strToCheck are equal else
- * returns 0
+ * return 1 if crcToCheck and crc computed with strToCheck are equal else
+ * return 0
  */
 int crc_is_equal(uint8_t* strToCheck, uint16_t strLength, uint32_t crcToCheck) {
 	return crc_32(strToCheck, strLength) == crcToCheck;

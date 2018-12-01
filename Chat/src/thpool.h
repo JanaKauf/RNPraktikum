@@ -21,6 +21,10 @@ struct threadpool {
     struct task_t		*tasks;
 };
 
+//TODO ok to put it here?
+struct threadpool *recv_pool;
+struct threadpool *send_pool;
+
 extern struct threadpool* Thpool_create();
 
 extern int Thpool_add_task(struct threadpool *pool,

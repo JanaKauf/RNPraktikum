@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 
+#include "thpool.h"
 #include "client.h"
 #include "packet.h"
 #include "color.h"

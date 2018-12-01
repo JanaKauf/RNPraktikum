@@ -3,13 +3,24 @@
 
 #include <stdint.h>
 
+//Message Types
 #define SIGN_IN 1
 #define SIGN_OUT 2
 #define MEMBER_LIST 3
 #define MESSAGE 4
 #define ERROR 5
 
+
+//Error Types
+#define ERROR_INVALID_ID 0
+#define ERROR_INVALID_LENGTH 1
+#define ERROR_UNREACHABLE 2
+#define ERROR_WRONG_CRC 3
+
 #define VERSION 1
+//######################INIT##########################
+extern int Tasks_start(void);
+extern int Tasks_clean(void);
 //###################SEND_TASKS#######################
 extern void send_sign_in (void * arg);
 extern void send_quit(void * args);
