@@ -1,10 +1,6 @@
 #ifndef _LIST_H
 #define _LIST_H
 
-#define SIZE_OF_HEADER_IN_BYTES 8
-#define SIZE_OF_MEMBER_IN_BYTES 20//((sizeof char) * 16) + sizeof(uint32)
-#define ID_LENGTH 16
-
 #include <stdint.h>
 
 typedef struct member {

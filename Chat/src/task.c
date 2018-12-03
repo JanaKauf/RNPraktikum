@@ -312,10 +312,9 @@ send_member_list (void * arg) {
 
 void
 send_error(void *buffer) {
-	//TODO connect send and disconnect
 	printf(BLU "#\t#\t#\t#\tsend_error()\t#\t#\t#\t#\n" RESET);
-	uint8_t* payload = buffer;
-	uint16_t string_length = 5;
+	struct error_args* error_args = buffer;
+	uint16_t string_length = htons(ERROR_CODE_LENGTH);
 	struct packet packet;
 	int sock_fd;
 
@@ -323,17 +322,17 @@ send_error(void *buffer) {
 	packet.version = VERSION; //version
 	packet.typ = ERROR; //type
 	packet.length = htons(string_length); //length
-	packet.crc = crc_32(payload, string_length);
-	strcpy((char*)packet.payload, (char*)payload);
+	packet.crc = htons(crc_32(&error_args->error_code, ERROR_CODE_LENGTH));
+	strcpy((char*)packet.payload, (char*)&error_args->error_code);
 
-//	Client_connect();
-//	if (sock_fd == -1) {
-//		return ;
-//	}
-//	send_to_server(&packet, buffer);
-//	Client_disconnect();
-//	if (close(sock_fd) != 0)
-//		perror("Close: ");
+	sock_fd = Client_connect(error_args->ip);
+	if (sock_fd == -1) {
+		return ;
+	}
+	send_to_server(&packet, sock_fd);
+
+	if (close(sock_fd) != 0)
+		perror("Close: ");
 }
 
 
@@ -390,7 +389,7 @@ recv_sign_in (uint8_t * buffer,
 	send_pool = Chat_get_sendpool();
 
 	//TODO i_ip unused?
-	struct in_addr i_ip;
+	//struct in_addr i_ip;
 
 	struct task_t job;
 
@@ -405,7 +404,7 @@ recv_sign_in (uint8_t * buffer,
 
 		id = &buffer[5 + offset];
 		
-		i_ip.s_addr = ip;
+		//i_ip.s_addr = ip;
 
 		pthread_mutex_lock(&mutex);
 		if (List_new_member(id, ip) != 0) {
@@ -494,7 +493,20 @@ recv_member_list (uint8_t *buffer) {
 		pthread_mutex_lock(&mutex);
 		if (List_new_member(id, ip) != 0) {
 			printf(RED "recv_member_list: id double %s or ip double %u\n" RESET, id, ip);
-		
+			struct error_args* error_args = malloc(sizeof(error_args));
+			struct task_t error_job;
+
+			error_args->ip[0] = ip & 0xFF000000;
+			error_args->ip[1] = ip & 0x00FF0000;
+			error_args->ip[2] = ip & 0x0000FF00;
+			error_args->ip[3] = ip & 0x000000FF;
+			error_args->error_code = ERROR_INVALID_ID;
+
+			error_job.routine_for_task = send_error;
+			error_job.arg = error_args;
+			error_job.mallfree = true;
+
+			Thpool_add_task(send_pool, error_job);
 		}
 		if (i == 0) {
 
@@ -535,7 +547,6 @@ recv_error(uint8_t *error, const uint32_t ip) {
 void
 recv_from_client (void *sockfd) {
 	packet_t pck;
-	uint32_t crc;
 	int num_bytes;
 
 	int new_fd = *(int *)(sockfd);
@@ -543,6 +554,11 @@ recv_from_client (void *sockfd) {
 	struct sockaddr_in client_ip;
 	socklen_t addr_size = sizeof(client_ip);
 	
+	getpeername(new_fd,
+			(struct sockaddr *)&client_ip,
+			&addr_size);
+
+
     if ((num_bytes = recv(new_fd, (struct packet *)&pck, sizeof (struct packet), 0)) <= 0) {
 		if (num_bytes == 0) {
 			printf(MAG "recv_from_client: sockfd %d not there\n" RESET, new_fd);
@@ -559,22 +575,13 @@ recv_from_client (void *sockfd) {
 
 		printf("length: %u\n", ntohs(pck.length));
 
-		crc = ntohl(pck.crc);
-		printf("crc: %u\n", crc);
-		if(!crc_is_equal((uint8_t *)&pck.payload, pck.length, crc)) {
-			struct task_t job_error_crc;
-			uint8_t* error_type = malloc(sizeof(uint8_t));
-			*error_type = htons(ERROR_WRONG_CRC);
-
-			job_error_crc.arg = error_type;
-			job_error_crc.mallfree = true;
-			job_error_crc.routine_for_task = send_error;
-			Thpool_add_task(send_pool, job_error_crc);
+		//checks for false crc and prints id + ip
+		if(!crc_is_equal((uint8_t *)&pck.payload, pck.length, pck.crc)) {
+			struct in_addr addr;
+			addr.s_addr = client_ip.sin_addr.s_addr;
+			printf("false crc-sum on packet from %s, ip: %s\n",
+					List_search_member_ip(client_ip.sin_addr.s_addr).id , inet_ntoa(addr));
 		}
-
-		getpeername(new_fd,
-				(struct sockaddr *)&client_ip,
-				&addr_size);
 				
 		switch (pck.typ) {
 			case SIGN_IN:
@@ -617,5 +624,6 @@ recv_from_client (void *sockfd) {
 int crc_is_equal(uint8_t* strToCheck, uint16_t strLength, uint32_t crcToCheck) {
 	return crc_32(strToCheck, strLength) == crcToCheck;
 }
+
 
 

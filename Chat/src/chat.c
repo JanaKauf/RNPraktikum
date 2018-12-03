@@ -1,3 +1,8 @@
+/***********************************************************************
+ * Takes Input from User and puts tasks in the Task-Queue   		   *
+ ***********************************************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -55,7 +60,7 @@ Cmd_routine (void *args ) {
 
 			Thpool_add_task(send_pool, job_msg);
 
-			printf("Sendind message...\n");
+			printf("Sending message...\n");
 		
 		} else {
 
