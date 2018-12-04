@@ -540,20 +540,20 @@ recv_member_list (uint8_t *buffer) {
 		pthread_mutex_lock(&mutex);
 		if (List_new_member(id, ip) != 0) {
 			printf(RED "recv_member_list: id double %s or ip double %u\n" RESET, id, ip);
-			struct error_args* error_args = malloc(sizeof(error_args));
-			struct task_t error_job;
-
-			error_args->ip[0] = ip & 0xFF000000;
-			error_args->ip[1] = ip & 0x00FF0000;
-			error_args->ip[2] = ip & 0x0000FF00;
-			error_args->ip[3] = ip & 0x000000FF;
-			error_args->error_code = ERROR_INVALID_ID;
-
-			error_job.routine_for_task = send_error;
-			error_job.arg = error_args;
-			error_job.mallfree = true;
-
-			Thpool_add_task(send_pool, error_job);
+//			struct error_args* error_args = malloc(sizeof(error_args));
+//			struct task_t error_job;
+//
+//			error_args->ip[0] = ip & 0xFF000000;
+//			error_args->ip[1] = ip & 0x00FF0000;
+//			error_args->ip[2] = ip & 0x0000FF00;
+//			error_args->ip[3] = ip & 0x000000FF;
+//			error_args->error_code = ERROR_INVALID_ID;
+//
+//			error_job.routine_for_task = send_error;
+//			error_job.arg = error_args;
+//			error_job.mallfree = true;
+//
+//			Thpool_add_task(send_pool, error_job);
 		}
 		if (i == 0) {
 
