@@ -623,7 +623,7 @@ recv_from_client (void *sockfd) {
 		printf("length: %u\n", ntohs(pck.length));
 
 		//checks for false crc and prints id + ip
-		if(!crc_is_equal((uint8_t *)&pck.payload, pck.length, pck.crc)) {
+		if(!crc_is_equal((uint8_t *)&pck.payload, ntohs(pck.length), ntohl(pck.crc))) {
 			struct in_addr addr;
 			addr.s_addr = client_ip.sin_addr.s_addr;
 			printf("false crc-sum on packet from %s, ip: %s\n",

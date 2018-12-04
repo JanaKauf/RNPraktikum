@@ -111,7 +111,7 @@ ARQ    = q
 RANLIB = ranlib
 CFLAGS = -Wall -Wextra -Wstrict-prototypes -Wshadow -Wpointer-arith \
 	-Wcast-qual -Wcast-align -Wwrite-strings -Wredundant-decls \
-	-Wnested-externs -Werror -O3 -funsigned-char -I${INCDIR}
+	-Wnested-externs -O3 -funsigned-char -I${INCDIR}
 
 endif
 
