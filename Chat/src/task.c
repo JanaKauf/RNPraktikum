@@ -12,9 +12,9 @@
 #include <sys/wait.h>
 #include <stdint.h>
 
+//#include "list_thrsafe.h"
 #include "packet.h"
 #include "list.h"
-//#include "list_thrsafe.h"
 #include "task.h"
 #include "client.h"
 #include "chat.h"
@@ -56,6 +56,16 @@ Tasks_clean (void) {
 
 //######################SEND_TASKS###############################
 
+/**
+ * Sends packet packet on socket sockfd with the length of length,
+ * makes sure that the whole packet is send
+ * @param packet the packet to be send
+ * @param length the length of the packet
+ * @param sockfd the socket descriptor to send the packet on
+ *
+ * @return -1 on failure, 0 on success
+ */
+
 int
 send_all_data (struct packet *packet, int *length, int sockfd) {
 	int total = 0;
@@ -76,7 +86,12 @@ send_all_data (struct packet *packet, int *length, int sockfd) {
 	return n==-1?-1:0;
 }
 
-void
+/*
+ * sends a packet packet on sockfd sockfd
+ * @param packet the packet to be send
+ * @param sockfd the socket descriptor to send the packet on
+ */
+int
 send_to_server (struct packet* packet, int sockfd) {
 	int length = sizeof(struct packet);
 
@@ -91,11 +106,11 @@ send_to_server (struct packet* packet, int sockfd) {
 		printf("Only send %d bytes\n", length);
 
 		perror("send_to_server: ");
-		return ;
+		return -1;
 	
 	}
 
-	return ;
+	return 0;
 }
 
 
@@ -114,7 +129,13 @@ void resend_packet(void * arg) {
 //	disconnect_from_server(&sock_fd);
 }
 
-
+/**
+ * sends a sign in message to the client, a sign in message
+ * contains all other clients known to us(the member list)
+ * and the size of this list
+ *
+ * @param arg contains an ip address to send the sign in message to
+ */
 void
 send_sign_in (void * arg) {
 	printf(BLU "#\t#\t#\t#\tsend_sign_in()\t#\t#\t#\t#\n" RESET);
@@ -162,7 +183,7 @@ send_sign_in (void * arg) {
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
 	send_to_server(&packet, sock_fd);
-
+	//TODO only set if send worked?
 	sign = true;
 
 	if (close(sock_fd) != 0)
@@ -172,6 +193,11 @@ send_sign_in (void * arg) {
 
 }
 
+
+/**
+ * sends a quit message to all other clients known to us, a quit
+ * message only contains our id
+ */
 void
 send_quit (void * args) {
 	printf(BLU "#\t#\t#\t#\tsend_quit()\t#\t#\t#\t#\n" RESET);
@@ -210,6 +236,11 @@ send_quit (void * args) {
 
 }
 
+/**
+ * sends a message(typed by the user)to the client
+ *
+ * @param buffer contains the ip address of the client
+ */
 void
 send_msg (void * buffer) {
 	printf(BLU "#\t#\t#\t#\tsend_msg()\t#\t#\t#\t#\n" RESET);
@@ -254,6 +285,12 @@ send_msg (void * buffer) {
 	pthread_mutex_unlock(&mutex);
 }
 
+/**
+ * sends the member list to the client, the member list contains
+ * all clients known to us
+ *
+ * @param arg contains the ip address to send the member list to
+ */
 void
 send_member_list (void * arg) {
 	printf(BLU "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
@@ -310,6 +347,14 @@ send_member_list (void * arg) {
 	pthread_mutex_unlock(&mutex);
 }
 
+/**
+ * sends an error packet to the client, an error can occur if
+ * 1. the client tried to connect to us but was already connected(error-code 0x0)
+ * 2. if the length was invalid(error-code 0x1)
+ * 3. if a client is not reachable(??) (error-code 0x2)
+ *
+ * @param buffer contains the ip and the error code to be send
+ */
 void
 send_error(void *buffer) {
 	printf(BLU "#\t#\t#\t#\tsend_error()\t#\t#\t#\t#\n" RESET);
@@ -335,7 +380,9 @@ send_error(void *buffer) {
 		perror("Close: ");
 }
 
-
+/*
+ *
+ */
 void
 send_member_list_to_my_members (void * args) {
 	uint8_t * payload = (uint8_t *)args;

@@ -18,7 +18,8 @@
 pthread_t serv_thread;
 pthread_t cmd_control;
 
-
+struct threadpool *recv_pool;
+struct threadpool *send_pool;
 
 void
 help_function (void) {

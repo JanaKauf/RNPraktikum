@@ -22,8 +22,7 @@ struct threadpool {
 };
 
 //TODO ok to put it here?
-struct threadpool *recv_pool;
-struct threadpool *send_pool;
+
 
 extern struct threadpool* Thpool_create();
 
