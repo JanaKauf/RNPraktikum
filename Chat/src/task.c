@@ -299,7 +299,7 @@ send_member_list (void * arg) {
 	printf(BLU "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
 	pthread_mutex_lock(&mutex);
 	struct member *p = List_get_list();
-	uint16_t bufsize = (List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1;
+	uint16_t bufsize = ((List_no_of_members() - 1) * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
 	uint8_t * id = (uint8_t *)arg;
 
@@ -330,6 +330,7 @@ send_member_list (void * arg) {
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
 		//store in network byteorder
+		printf("messenger: %s p->id: %s\n", id, p->id);
 		if (strcmp((char *)p->id, (char *)id)) {
 			p = p->next;
 			continue;
