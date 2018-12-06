@@ -151,6 +151,7 @@ send_sign_in (void * arg) {
 
 	if (sock_fd == -1) {
 		perror(RED "Client_connect: send_sign_in" RESET);
+		pthread_mutex_unlock(&mutex);
 		return ;
 	}
 
@@ -257,6 +258,7 @@ send_msg (void * buffer) {
 
 	if (messeger.ip == 0) {
 		perror(RED "send_msg ID not found" RESET);
+		pthread_mutex_unlock(&mutex);
 		return ;
 	}
 
@@ -267,6 +269,7 @@ send_msg (void * buffer) {
 
 	if (sock_fd == -1) {
 		perror(RED "Client_connect: send_msg" RESET);
+		pthread_mutex_unlock(&mutex);
 		return ;
 	}
 
@@ -309,6 +312,7 @@ send_member_list (void * arg) {
 
 	if (sock_fd == -1) {
 		perror(RED "Client_connect: send_member_list" RESET);
+		pthread_mutex_unlock(&mutex);
 		return ;
 	}
 
@@ -326,6 +330,10 @@ send_member_list (void * arg) {
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
 		//store in network byteorder
+		if (strcmp((char *)p->id, (char *)id)) {
+			p = p->next;
+			continue;
+		}
 		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
 		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
 		packet.payload[2 + ip_addr_offset] = (p->ip & 0x0000FF00) >> 8;
