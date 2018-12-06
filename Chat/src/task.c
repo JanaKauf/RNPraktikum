@@ -297,7 +297,7 @@ send_member_list (void * arg) {
 	printf(BLU "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
 	pthread_mutex_lock(&mutex);
 	struct member *p = List_get_list();
-	uint16_t bufsize = ((List_no_of_members() - 1) * SIZE_OF_MEMBER_IN_BYTES) + 1;
+	uint16_t bufsize = (List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
 	uint32_t ip = *((uint32_t*)arg);
 
@@ -317,7 +317,7 @@ send_member_list (void * arg) {
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(bufsize); //length
-	packet.payload[0] = (uint8_t)List_no_of_members() - 1;
+	packet.payload[0] = (uint8_t)List_no_of_members();
 
 	int ip_addr_offset = 1;
 	int id_offset;
