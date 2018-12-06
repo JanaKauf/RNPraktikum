@@ -138,7 +138,7 @@ void resend_packet(void * arg) {
  */
 void
 send_sign_in (void * arg) {
-	printf(BLU "#\t#\t#\t#\tsend_sign_in()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\tsend_sign_in()\t#\t#\t#\t#\n" RESET);
 	int i;
 	int j;
 	char * ip = (char *) arg;
@@ -201,7 +201,7 @@ send_sign_in (void * arg) {
  */
 void
 send_quit (void * args) {
-	printf(BLU "#\t#\t#\t#\tsend_quit()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\tsend_quit()\t#\t#\t#\t#\n" RESET);
 	struct packet packet;
 
 	struct member *me = List_get_list();
@@ -244,7 +244,7 @@ send_quit (void * args) {
  */
 void
 send_msg (void * buffer) {
-	printf(BLU "#\t#\t#\t#\tsend_msg()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\tsend_msg()\t#\t#\t#\t#\n" RESET);
 	uint8_t* id = (uint8_t*)strtok(buffer, " \n\0");
 	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0");
@@ -294,7 +294,7 @@ send_msg (void * buffer) {
  */
 void
 send_member_list (void * arg) {
-	printf(BLU "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
 	pthread_mutex_lock(&mutex);
 	struct member *p = List_get_list();
 	uint16_t bufsize = (List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1;
@@ -358,7 +358,7 @@ send_member_list (void * arg) {
  */
 void
 send_error(void *buffer) {
-	printf(BLU "#\t#\t#\t#\tsend_error()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\tsend_error()\t#\t#\t#\t#\n" RESET);
 	struct error_args* error_args = buffer;
 	uint16_t string_length = htons(ERROR_CODE_LENGTH);
 	struct packet packet;
@@ -436,7 +436,7 @@ send_member_list_to_my_members (void * args) {
 int
 recv_sign_in (uint8_t * buffer,
 		const uint32_t ip_addr, int sockfd) {
-	printf(BLU "#\t#\t#\t#\trecv_sign_in()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\trecv_sign_in()\t#\t#\t#\t#\n" RESET);
 
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
@@ -488,7 +488,7 @@ recv_sign_in (uint8_t * buffer,
 
 int
 recv_quit (uint8_t *id) {
-	printf(BLU "#\t#\t#\t#\trecv_quit()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\trecv_quit()\t#\t#\t#\t#\n" RESET);
 
 	printf("@%s: quit\n", id);
 
@@ -504,7 +504,7 @@ recv_quit (uint8_t *id) {
 
 int
 recv_msg (uint8_t *msg, const uint32_t ip) {
-	printf(BLU "#\t#\t#\t#\trecv_msg()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\trecv_msg()\t#\t#\t#\t#\n" RESET);
 	struct member messeger;
 
 	pthread_mutex_lock(&mutex);
@@ -518,7 +518,7 @@ recv_msg (uint8_t *msg, const uint32_t ip) {
 
 int
 recv_member_list (uint8_t *buffer) {
-	printf(BLU "#\t#\t#\t#\trecv_member_list()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\trecv_member_list()\t#\t#\t#\t#\n" RESET);
 	uint8_t no_member = buffer[0];
 	uint32_t ip;
 	uint8_t *id;
@@ -576,7 +576,7 @@ recv_member_list (uint8_t *buffer) {
 
 int
 recv_error(uint8_t *error, const uint32_t ip) {
-	printf(BLU "#\t#\t#\t#\trecv_error()\t#\t#\t#\t#\n" RESET);
+	printf(CYN "#\t#\t#\t#\trecv_error()\t#\t#\t#\t#\n" RESET);
 	struct member messeger;
 
 	pthread_mutex_lock(&mutex);
