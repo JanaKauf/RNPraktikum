@@ -299,12 +299,11 @@ send_member_list (void * arg) {
 	struct member *p = List_get_list();
 	uint16_t bufsize = ((List_no_of_members() - 1) * SIZE_OF_MEMBER_IN_BYTES) + 1;
 	struct packet packet;
-	uint8_t * id = (uint8_t *)arg;
+	uint32_t ip = *((uint32_t*)arg);
 
-	struct member messenger = List_search_member_id(id);
 	int sock_fd;
 	struct in_addr i_ip;
-	i_ip.s_addr = messenger.ip;
+	i_ip.s_addr = ip;
 
 	sock_fd = Client_connect(inet_ntoa(i_ip));
 
@@ -328,11 +327,6 @@ send_member_list (void * arg) {
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
 		//store in network byteorder
-		printf("messenger: %s p->id: %s\n", id, p->id);
-		if (strcmp((char *)p->id, (char *)id) == 0) {
-			p = p->next;
-			continue;
-		}
 		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
 		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
 		packet.payload[2 + ip_addr_offset] = (p->ip & 0x0000FF00) >> 8;
@@ -475,7 +469,7 @@ recv_sign_in (uint8_t * buffer,
 		if (i == 0) {
 			printf("sign in: %s sock_fd %d\n", id, sockfd);	
 
-			send_member_list(id);
+			send_member_list(&ip);
 		}
 
 		pthread_mutex_lock(&mutex);
