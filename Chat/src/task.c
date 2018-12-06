@@ -405,9 +405,7 @@ send_update (void * args) {
 	packet.length = htons(sizeof(payload)); //length
 	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
 
-	for (i = 0; i <= sizeof(payload); i++) {
-		packet.payload[i] = payload[i];
-	}
+	memcpy(packet.payload, payload, sizeof(payload));
 
 	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
