@@ -254,8 +254,6 @@ send_msg (void * buffer) {
 	int sock_fd;
 	struct packet packet;
 
-	printf("msg: %s\n", msg);
-
 	if (messeger.ip == 0) {
 		perror(RED "send_msg ID not found" RESET);
 		pthread_mutex_unlock(&mutex);
@@ -320,7 +318,7 @@ send_member_list (void * arg) {
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(bufsize); //length
-	packet.payload[0] = (uint8_t)List_no_of_members();
+	packet.payload[0] = (uint8_t)List_no_of_members() - 1;
 
 	int ip_addr_offset = 1;
 	int id_offset;
@@ -331,7 +329,7 @@ send_member_list (void * arg) {
 	for(i = 0; i < List_no_of_members(); i++) {
 		//store in network byteorder
 		printf("messenger: %s p->id: %s\n", id, p->id);
-		if (strcmp((char *)p->id, (char *)id)) {
+		if (strcmp((char *)p->id, (char *)id) == 0) {
 			p = p->next;
 			continue;
 		}
