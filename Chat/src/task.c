@@ -385,7 +385,8 @@ send_error(void *buffer) {
  *
  */
 void
-send_member_list_to_my_members (void * args) {
+send_update (void * args) {
+	printf(CYN "#\t#\t#\t#\tsend_update()\t#\t#\t#\t#\n" RESET);
 	uint8_t * payload = (uint8_t *)args;
 	struct packet packet;
 	struct member *p;
@@ -453,7 +454,7 @@ recv_sign_in (uint8_t * buffer,
 	int offset = 0;
 
 	if (List_no_of_members() > 1) {
-		send_member_list_to_my_members(buffer);
+		send_update(buffer);
 	}
 
 	int i;
@@ -533,7 +534,7 @@ recv_member_list (uint8_t *buffer) {
 	int i;
 
 	if (List_no_of_members() > 1 && sign) {
-		send_member_list_to_my_members(buffer);
+		send_update(buffer);
 	}
 
 	pthread_mutex_lock(&mutex);
