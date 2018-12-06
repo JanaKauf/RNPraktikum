@@ -391,18 +391,27 @@ send_member_list_to_my_members (void * args) {
 	struct in_addr i_ip;
 	int sock_fd;
 
+	uint8_t id[ID_LENGTH];
+
+	int i;
+	for (i = 0; i < ID_LENGTH; i++ ) {
+		id[i] = payload[1];
+	}
+
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(sizeof(payload)); //length
 	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
 
-	int i;
 	for (i = 0; i <= sizeof(payload); i++) {
 		packet.payload[i] = payload[i];
 	}
 
 	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
+		if (strcmp(p->id, id)) {
+			continue;
+		}
 		i_ip.s_addr = p->ip;
 
 		sock_fd = Client_connect(inet_ntoa(i_ip));
