@@ -472,23 +472,19 @@ recv_sign_in (uint8_t * buffer,
 		id = &buffer[5 + offset];
 		
 		//i_ip.s_addr = ip;
+		if (i == 0) {
+			printf("sign in: %s sock_fd %d\n", id, sockfd);	
+
+			send_member_list(id);
+		}
 
 		pthread_mutex_lock(&mutex);
 		if (List_new_member(id, ip) != 0) {
 			printf(RED "recv_sign_in: id double %s or ip double %u\n" RESET, id, ip);
-		
+
 		}
 		pthread_mutex_unlock(&mutex);
 
-		if (i == 0) {
-			printf("sign in: %s sock_fd %d\n", id, sockfd);	
-
-			job.routine_for_task = send_member_list;
-			job.arg = malloc(sizeof(id));
-			strcpy((char*)job.arg, (char*)id);
-			job.mallfree = true;
-			Thpool_add_task(send_pool, job);
-		}
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
