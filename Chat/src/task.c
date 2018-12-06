@@ -458,6 +458,10 @@ recv_sign_in (uint8_t * buffer,
 
 	int offset = 0;
 
+	if (List_no_of_members() > 1) {
+		send_member_list_to_my_members(buffer);
+	}
+
 	int i;
 	for (i = 0; i < no_member; i++) {
 		ip = (uint32_t) buffer[1 + offset] << 24
@@ -484,14 +488,6 @@ recv_sign_in (uint8_t * buffer,
 			strcpy((char*)job.arg, (char*)id);
 			job.mallfree = true;
 			Thpool_add_task(send_pool, job);
-
-			if (List_no_of_members() > 1) {
-				job.routine_for_task = send_member_list_to_my_members;
-				job.arg = malloc(sizeof(buffer));
-				strcpy((char*)job.arg, (char*)buffer);
-				job.mallfree = true;
-				Thpool_add_task(send_pool, job);
-			}
 		}
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
@@ -545,6 +541,11 @@ recv_member_list (uint8_t *buffer) {
 	int offset = 0;
 
 	int i;
+
+	if (List_no_of_members() > 1 && sign) {
+		send_member_list_to_my_members(buffer);
+	}
+
 	pthread_mutex_lock(&mutex);
 	for (i = 0; i < no_member; i++) {
 		ip = (uint32_t) buffer[1 + offset] << 24
@@ -574,14 +575,6 @@ recv_member_list (uint8_t *buffer) {
 		printf(CYN "recv_member_list id: %s\n" RESET, id);
 		printf(CYN "recv_member_list ip: %u\n\n" RESET, ip);
 		offset += SIZE_OF_MEMBER_IN_BYTES;
-	}
-
-	if (List_no_of_members() > 1 && sign) {
-		job.routine_for_task = send_member_list_to_my_members;
-		job.arg = malloc(sizeof(buffer));
-		strcpy((char*)job.arg, (char*)buffer);
-		job.mallfree = true;
-		Thpool_add_task(send_pool, job);
 	}
 
 	pthread_mutex_unlock(&mutex);
