@@ -407,7 +407,7 @@ send_member_list_to_my_members (void * args) {
 
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
-	packet.length = htons(sizeof(payload)); //length
+	packet.length = htons(sizeof(payload) - SIZE_OF_MEMBER_IN_BYTES); //length
 	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
 
 	for (i = 0; i <= sizeof(payload); i++) {
