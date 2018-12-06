@@ -336,7 +336,7 @@ send_member_list (void * arg) {
 		for(j = 0; j < ID_LENGTH; j++) {
 			packet.payload[id_offset + j] = p->id[j];
 		}
-
+		printf("send_member_list: id: %s, ip: %d\n", p->id, p->ip);
 		ip_addr_offset += SIZE_OF_MEMBER_IN_BYTES;
 		p = p->next;
 	}
