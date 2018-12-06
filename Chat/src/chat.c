@@ -56,7 +56,6 @@ Cmd_routine (void *args ) {
 		if (msg[0] == '@') {
 			job_msg.routine_for_task = send_msg;
 			job_msg.arg = malloc(sizeof(msg));
-			job_msg.mallfree = true;
 			strcpy(job_msg.arg, msg);
 
 			Thpool_add_task(send_pool, job_msg);
@@ -71,7 +70,6 @@ Cmd_routine (void *args ) {
 				ip = strtok(NULL, "\n");
 				job_sign.routine_for_task = send_sign_in;
 				job_sign.arg = malloc(sizeof(ip));
-				job_msg.mallfree = true;
 				strcpy(job_sign.arg, ip);
 
 				Thpool_add_task(send_pool, job_sign);
@@ -82,11 +80,9 @@ Cmd_routine (void *args ) {
 				job_quit.routine_for_task = send_quit;
 				job_quit.arg = malloc(sizeof(msg));
 				job_quit.arg = msg;
-				job_quit.mallfree = true;
 				Thpool_add_task(send_pool, job_quit);
 
 				printf("Quiting...\n");
-				pthread_exit(0);
 				break;
 		
 			} else if (strncmp(cmd, "/info", 5) == 0){
@@ -94,12 +90,16 @@ Cmd_routine (void *args ) {
 			
 			} else if (strncmp(cmd, "/help", 5) == 0){
 				help_function();
+
 			} else {
 				continue;
+
 			}
 		}
 			
 	}
+
+	pthread_exit(0);
 	return NULL;
 }
 

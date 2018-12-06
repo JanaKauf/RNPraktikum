@@ -9,7 +9,6 @@
 struct task_t {
 	void (*routine_for_task)(void *);
 	void *arg;
-	bool	mallfree;
 	struct task_t *next;
 };
 
@@ -20,9 +19,6 @@ struct threadpool {
 	int					counter;
     struct task_t		*tasks;
 };
-
-//TODO ok to put it here?
-
 
 extern struct threadpool* Thpool_create();
 

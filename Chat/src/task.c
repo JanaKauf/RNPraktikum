@@ -12,7 +12,6 @@
 #include <sys/wait.h>
 #include <stdint.h>
 
-//#include "list_thrsafe.h"
 #include "packet.h"
 #include "list.h"
 #include "task.h"
@@ -28,10 +27,16 @@
 pthread_mutex_t mutex;
 bool sign;
 
+/**
+ * Starts the mutex to protect List
+ *
+ * @return -1 on failure, 0 on success
+ */
+
 int
-Tasks_start() {
+Tasks_start(void) {
 	if (pthread_mutex_init(&mutex, NULL) != 0) {
-		perror("Tasks_start: send_mutex");
+		perror("Tasks_start: mutex");
 		return -1;
 	}
 
@@ -40,14 +45,24 @@ Tasks_start() {
 	return 0;
 }
 
+/**
+ * Destroy list and mutex
+ *
+ * @return -1 on failure, 0 on success
+ */
+
 int
 Tasks_clean (void) {
 
 	if (List_delete()) {
-		perror("Tasks_start: ");
+		perror("Tasks_start: List_delete");
 		return -1;
 	}
-	pthread_mutex_destroy(&mutex);
+
+	if (pthread_mutex_destroy(&mutex) != 0) {
+		perror("Tasks_clean: mutex");
+		return -1;
+	}
 
 	return 0;
 
@@ -83,25 +98,21 @@ send_all_data (struct packet *packet, int *length, int sockfd) {
 
 	*length = total;
 
-	return n==-1?-1:0;
+	return n == -1 ? -1 : 0;
 }
 
 /*
  * sends a packet packet on sockfd sockfd
  * @param packet the packet to be send
  * @param sockfd the socket descriptor to send the packet on
+ *
+ * @return -1 on failure, 0 on success
  */
 int
 send_to_server (struct packet* packet, int sockfd) {
 	int length = sizeof(struct packet);
 
 	if (send_all_data(packet, &length, sockfd) == -1) {
-//		struct args_send send_args;
-//		send_args.sock_fd = sockfd;
-//		send_args.buf = packet;
-//		resend_packet(&send_args);
-
-
 		errno = EPERM;
 		printf("Only send %d bytes\n", length);
 
@@ -139,6 +150,7 @@ void resend_packet(void * arg) {
 void
 send_sign_in (void * arg) {
 	printf(CYN "#\t#\t#\t#\tsend_sign_in()\t#\t#\t#\t#\n" RESET);
+
 	int i;
 	int j;
 	char * ip = (char *) arg;
@@ -154,7 +166,6 @@ send_sign_in (void * arg) {
 		pthread_mutex_unlock(&mutex);
 		return ;
 	}
-
 
 	//header of member list
 	packet.version = VERSION; //version
@@ -184,7 +195,7 @@ send_sign_in (void * arg) {
 	packet.crc = htonl(crc_32(packet.payload, bufsize));
 
 	send_to_server(&packet, sock_fd);
-	//TODO only set if send worked?
+	//flag for the update() bei recv_member_list()
 	sign = true;
 
 	if (close(sock_fd) != 0)
@@ -238,17 +249,20 @@ send_quit (void * args) {
 }
 
 /**
- * sends a message(typed by the user)to the client
+ * sends a message(typed by the user)to a member on the list
  *
- * @param buffer contains the ip address of the client
+ * @param buffer contains the id and msg
  */
 void
 send_msg (void * buffer) {
 	printf(CYN "#\t#\t#\t#\tsend_msg()\t#\t#\t#\t#\n" RESET);
-	uint8_t* id = (uint8_t*)strtok(buffer, " \n\0");
+
+	uint8_t* id = (uint8_t*)strtok(buffer, " \n\0"); //take id from buffer 
 	id++; //remove @ from id
-	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0");
+	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0"); //take msg from buffer
+
 	uint16_t bufsize = sizeof(msg);
+
 	pthread_mutex_lock(&mutex);
 	struct member messeger = List_search_member_id(id);
 	int sock_fd;
@@ -382,36 +396,29 @@ send_error(void *buffer) {
 }
 
 /*
+ * Sends to all of my members a list of new members
+ * @param payload new list
  *
  */
 void
-send_update (void * args) {
+send_update (uint8_t * payload) {
 	printf(CYN "#\t#\t#\t#\tsend_update()\t#\t#\t#\t#\n" RESET);
-	uint8_t * payload = (uint8_t *)args;
 	struct packet packet;
 	struct member *p;
 	struct in_addr i_ip;
 	int sock_fd;
 
-	uint8_t id[ID_LENGTH];
-
 	int i;
-	for (i = 0; i < ID_LENGTH; i++ ) {
-		id[i] = payload[1];
-	}
 
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(sizeof(payload)); //length
 	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
 
-	strcpy(packet.payload, payload);
+	memcpy(packet.payload, payload, sizeof(payload));
 
 	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
-		if (strcmp(p->id, id) == 0) {
-			continue;
-		}
 		i_ip.s_addr = p->ip;
 
 		sock_fd = Client_connect(inet_ntoa(i_ip));
@@ -431,42 +438,46 @@ send_update (void * args) {
 
 
 
-//######################RECV_TASKS###############################
+/**							RECV_TASKS								*/
+
+/**
+ * Receives a list of new members
+ *
+ * @param payload -> list of new members
+ * @param ip_addr ip -> adress from sender
+ * @param sockfd -> socket where the transmission happend
+ */
 int
-recv_sign_in (uint8_t * buffer,
+recv_sign_in (uint8_t * payload,
 		const uint32_t ip_addr, int sockfd) {
 	printf(CYN "#\t#\t#\t#\trecv_sign_in()\t#\t#\t#\t#\n" RESET);
 
-	uint8_t no_member = buffer[0];
+	uint8_t no_member = payload[0];
 	uint32_t ip;
 	uint8_t *id;
 
 	struct threadpool * send_pool;
 	send_pool = Chat_get_sendpool();
 
-	//TODO i_ip unused?
-	//struct in_addr i_ip;
-
 	struct task_t job;
 
 	int offset = 0;
 
 	if (List_no_of_members() > 1) {
-		send_update(buffer);
+		send_update(payload);
 	}
 
 	int i;
 	for (i = 0; i < no_member; i++) {
-		ip = (uint32_t) buffer[1 + offset] << 24
-					| buffer[2 + offset] << 16
-					| buffer[3 + offset] << 8
-					| buffer[4 + offset];
+		ip = (uint32_t) payload[1 + offset] << 24
+					| payload[2 + offset] << 16
+					| payload[3 + offset] << 8
+					| payload[4 + offset];
 
-		id = &buffer[5 + offset];
+		id = &payload[5 + offset];
 		
-		//i_ip.s_addr = ip;
 		if (i == 0) {
-			printf("sign in: %s sock_fd %d\n", id, sockfd);	
+			printf("recv_sing_in id: %s sock_fd %d\n", id, sockfd);	
 
 			send_member_list(&ip);
 		}
@@ -478,12 +489,20 @@ recv_sign_in (uint8_t * buffer,
 		}
 		pthread_mutex_unlock(&mutex);
 
+		printf(CYN "recv_sign_in id: %s\n" RESET, id);
+		printf(CYN "recv_sign_in ip: %u\n\n" RESET, ip);
 
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
 	return 0;
 }
+
+/**
+ * Receives a quit from a id
+ *
+ * @param id -> id from quitter
+ */
 
 int
 recv_quit (uint8_t *id) {
@@ -501,9 +520,17 @@ recv_quit (uint8_t *id) {
 	return 0;
 }
 
+/**
+ * Receives a msg from a id
+ *
+ * @param msg -> message
+ * @param ip -> ip from messenger
+ */
+
 int
 recv_msg (uint8_t *msg, const uint32_t ip) {
 	printf(CYN "#\t#\t#\t#\trecv_msg()\t#\t#\t#\t#\n" RESET);
+
 	struct member messeger;
 
 	pthread_mutex_lock(&mutex);
@@ -515,10 +542,17 @@ recv_msg (uint8_t *msg, const uint32_t ip) {
 	return 0;
 }
 
+/**
+ * Receives a list of new members
+ *
+ * @param payload -> list of new members
+ */
+
 int
-recv_member_list (uint8_t *buffer) {
+recv_member_list (uint8_t *payload) {
 	printf(CYN "#\t#\t#\t#\trecv_member_list()\t#\t#\t#\t#\n" RESET);
-	uint8_t no_member = buffer[0];
+
+	uint8_t no_member = payload[0];
 	uint32_t ip;
 	uint8_t *id;
 
@@ -532,17 +566,17 @@ recv_member_list (uint8_t *buffer) {
 	int i;
 
 	if (List_no_of_members() > 1 && sign) {
-		send_update(buffer);
+		send_update(payload);
 	}
 
 	pthread_mutex_lock(&mutex);
 	for (i = 0; i < no_member; i++) {
-		ip = (uint32_t) buffer[1 + offset] << 24
-					| buffer[2 + offset] << 16
-					| buffer[3 + offset] << 8
-					| buffer[4 + offset];
+		ip = (uint32_t) payload[1 + offset] << 24
+					| payload[2 + offset] << 16
+					| payload[3 + offset] << 8
+					| payload[4 + offset];
 
-		id = &buffer[5 + offset];	
+		id = &payload[5 + offset];	
 
 		if (List_new_member(id, ip) != 0) {
 			printf(RED "recv_member_list: id double %s or ip double %u\n" RESET, id, ip);
@@ -561,8 +595,10 @@ recv_member_list (uint8_t *buffer) {
 //
 //			Thpool_add_task(send_pool, error_job);
 		}
+
 		printf(CYN "recv_member_list id: %s\n" RESET, id);
 		printf(CYN "recv_member_list ip: %u\n\n" RESET, ip);
+
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
 
@@ -576,12 +612,14 @@ recv_member_list (uint8_t *buffer) {
 int
 recv_error(uint8_t *error, const uint32_t ip) {
 	printf(CYN "#\t#\t#\t#\trecv_error()\t#\t#\t#\t#\n" RESET);
-	struct member messeger;
+
+	struct member messenger;
 
 	pthread_mutex_lock(&mutex);
-	messeger = List_search_member_ip(ip);
+	messenger = List_search_member_ip(ip);
 	pthread_mutex_unlock(&mutex);
-	printf(YEL "#%s: %s\n" RESET, messeger.id, error);
+
+	printf(YEL "#%s: %s\n" RESET, messenger.id, error);
 
 	return 0;
 }
@@ -658,7 +696,6 @@ recv_from_client (void *sockfd) {
 }
 
 
-//TODO put function in a different file???
 /**
  * return 1 if crcToCheck and crc computed with strToCheck are equal else
  * return 0

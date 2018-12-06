@@ -142,7 +142,6 @@ Server_thread (void *args) {
 		job.routine_for_task = recv_from_client;
 		job.arg = malloc(sizeof(int));
 		*(int *)(job.arg) = new_fd;
-		job.mallfree = true;
 
 		Thpool_add_task(pool, job);
 	}

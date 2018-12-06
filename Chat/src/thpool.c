@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <errno.h>
-//#include "taskqueue.h"
 #include "thpool.h"
 
 struct threadpool *
@@ -149,9 +148,7 @@ Thpool_routine(void *threadpool) {
 
         (*(job.routine_for_task))(job.arg);
 
-		if (job.mallfree) {
-			free(first->arg);
-		}
+		free(first->arg);
 		free(first);
 
     }
