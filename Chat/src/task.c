@@ -416,7 +416,7 @@ send_member_list_to_my_members (void * args) {
 
 	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
-		if (strcmp(p->id, id)) {
+		if (strcmp(p->id, id) == 0) {
 			continue;
 		}
 		i_ip.s_addr = p->ip;
@@ -545,6 +545,7 @@ recv_member_list (uint8_t *buffer) {
 	int offset = 0;
 
 	int i;
+	pthread_mutex_lock(&mutex);
 	for (i = 0; i < no_member; i++) {
 		ip = (uint32_t) buffer[1 + offset] << 24
 					| buffer[2 + offset] << 16
@@ -553,7 +554,6 @@ recv_member_list (uint8_t *buffer) {
 
 		id = &buffer[5 + offset];	
 
-		pthread_mutex_lock(&mutex);
 		if (List_new_member(id, ip) != 0) {
 			printf(RED "recv_member_list: id double %s or ip double %u\n" RESET, id, ip);
 //			struct error_args* error_args = malloc(sizeof(error_args));
@@ -571,23 +571,20 @@ recv_member_list (uint8_t *buffer) {
 //
 //			Thpool_add_task(send_pool, error_job);
 		}
-		if (i == 0) {
-
-			if (List_no_of_members() > 1 && sign) {
-				job.routine_for_task = send_member_list_to_my_members;
-				job.arg = malloc(sizeof(buffer));
-				strcpy((char*)job.arg, (char*)buffer);
-				job.mallfree = true;
-				Thpool_add_task(send_pool, job);
-			}
-		}
-
-		pthread_mutex_unlock(&mutex);
-
 		printf(CYN "recv_member_list id: %s\n" RESET, id);
 		printf(CYN "recv_member_list ip: %u\n\n" RESET, ip);
 		offset += SIZE_OF_MEMBER_IN_BYTES;
 	}
+
+	if (List_no_of_members() > 1 && sign) {
+		job.routine_for_task = send_member_list_to_my_members;
+		job.arg = malloc(sizeof(buffer));
+		strcpy((char*)job.arg, (char*)buffer);
+		job.mallfree = true;
+		Thpool_add_task(send_pool, job);
+	}
+
+	pthread_mutex_unlock(&mutex);
 
 	sign = false;
 
