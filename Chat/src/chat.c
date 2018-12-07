@@ -63,11 +63,15 @@ Cmd_routine (void *args ) {
 			printf("Sending message...\n");
 		
 		} else {
-
-			cmd = strtok(msg, " ");
+			cmd = strtok(msg, " \n");
 
 			if (strncmp(cmd, "/connect", 8) == 0) {
 				ip = strtok(NULL, "\n");
+				if(strlen(ip) < 7) {
+					help_function();
+					continue;
+				}
+
 				job_sign.routine_for_task = send_sign_in;
 				job_sign.arg = malloc(sizeof(ip));
 				strcpy(job_sign.arg, ip);

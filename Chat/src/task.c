@@ -309,6 +309,7 @@ send_msg (void * buffer) {
 void
 send_member_list (void * arg) {
 	printf(CYN "#\t#\t#\t#\tsend_member_list()\t#\t#\t#\t#\n" RESET);
+
 	pthread_mutex_lock(&mutex);
 	struct member *p = List_get_list();
 	uint16_t bufsize = (List_no_of_members() * SIZE_OF_MEMBER_IN_BYTES) + 1;
@@ -373,6 +374,7 @@ send_member_list (void * arg) {
 void
 send_error(void *buffer) {
 	printf(CYN "#\t#\t#\t#\tsend_error()\t#\t#\t#\t#\n" RESET);
+
 	struct error_args* error_args = buffer;
 	uint16_t string_length = htons(ERROR_CODE_LENGTH);
 	struct packet packet;
@@ -403,19 +405,22 @@ send_error(void *buffer) {
 void
 send_update (uint8_t * payload) {
 	printf(CYN "#\t#\t#\t#\tsend_update()\t#\t#\t#\t#\n" RESET);
+
 	struct packet packet;
 	struct member *p;
 	struct in_addr i_ip;
 	int sock_fd;
 
+	uint16_t size = (payload[0] * SIZE_OF_MEMBER_IN_BYTES) + 1;
+
 	int i;
 
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
-	packet.length = htons(sizeof(payload)); //length
+	packet.length = htons(size); //length
 	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
 
-	memcpy(packet.payload, payload, sizeof(payload));
+	memcpy(packet.payload, payload, size);
 
 	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
@@ -659,7 +664,7 @@ recv_from_client (void *sockfd) {
 		if(!crc_is_equal((uint8_t *)&pck.payload, ntohs(pck.length), ntohl(pck.crc))) {
 			struct in_addr addr;
 			addr.s_addr = client_ip.sin_addr.s_addr;
-			printf("false crc-sum on packet from %s, ip: %s\n",
+			printf(RED "false crc-sum on packet from %s, ip: %s\n" RESET,
 					List_search_member_ip(client_ip.sin_addr.s_addr).id , inet_ntoa(addr));
 		}
 				
