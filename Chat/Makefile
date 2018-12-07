@@ -32,8 +32,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR)/chat: $(OBJDIR)/chat.o $(OBJDIR)/server.o $(OBJDIR)/thpool.o $(OBJDIR)/task.o $(OBJDIR)/list.o $(OBJDIR)/list_thrsafe.o $(OBJDIR)/client.o
-
+$(BINDIR)/chat: $(OBJDIR)/chat.o $(OBJDIR)/server.o $(OBJDIR)/client.o $(OBJDIR)/thpool.o $(OBJDIR)/task.o $(OBJDIR)/list.o 
 	@echo -e "${RED}EXECUTABLE von $< ${NC}"
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

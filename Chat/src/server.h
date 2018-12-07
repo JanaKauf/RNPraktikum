@@ -13,5 +13,4 @@
 
 extern void * Server_thread (void *args);
 
-
 #endif /* SRC_SERVER_H_ */

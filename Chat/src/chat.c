@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "server.h"
+#include "client.h"
 #include "thpool.h"
 #include "task.h"
 #include "list.h"
@@ -110,18 +111,15 @@ Cmd_routine (void *args ) {
 int
 main (int argc, char *argv[]) {
 
-	if (argc != 3) {
+	if (argc != 4) {
 		printf(RED "usage: ./chat <ID> <Interface>\n" RESET);
 		return -1;
 	
 	}
 
-	char * arg = argv[1];
-	
-	strcpy(arg, argv[1]);
-	arg[strlen(arg)] = ' ';
+	char ** arg = malloc(sizeof(argv[argc]));
 
-	printf("arg: %s\n", arg);
+	arg = argv;
 
 	printf(MAG "-- Creating member_list...\n" RESET);
 
@@ -143,6 +141,8 @@ main (int argc, char *argv[]) {
 		goto recvfree;
 	}
 
+	Client_protocol(argv[3]);
+
 	printf(MAG "-- Serv_thread create...\n" RESET);
 	pthread_create(&serv_thread, NULL, Server_thread, arg);
 
@@ -152,6 +152,8 @@ main (int argc, char *argv[]) {
 	pthread_join(cmd_control, NULL);
 	pthread_cancel(serv_thread);
 	pthread_join(serv_thread, NULL);
+
+	free(arg);
 
 	Thpool_destroy(send_pool);
 	Thpool_free(send_pool);

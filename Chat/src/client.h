@@ -3,5 +3,6 @@
 
 #define PORT "6100"
 
-extern int Client_connect (char * server_ip);
+extern void Client_protocol (char *protocol);
+extern int Client_connect (char *server_ip);
 #endif /* CLIENT_H*/

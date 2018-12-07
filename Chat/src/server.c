@@ -35,9 +35,8 @@ struct sockaddr_storage their_addr;
 int yes = 1;
 
 int
-Server_init(uint8_t * id, uint8_t * interface) {
+Server_tcp_init(char * id, char * interface) {
 	struct addrinfo *servlist, *p;
-
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -65,6 +64,7 @@ Server_init(uint8_t * id, uint8_t * interface) {
 			perror("server: bind");
 			continue;
 		}
+		printf("%u\n", p->ai_addr);
 		break;
 	}
 
@@ -77,7 +77,7 @@ Server_init(uint8_t * id, uint8_t * interface) {
 	}
 
 	struct ifreq ifr;
-	strcpy(ifr.ifr_name, (char *)interface);
+	strcpy(ifr.ifr_name, interface);
 
 	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
 		perror("ioctl: ");
@@ -86,7 +86,9 @@ Server_init(uint8_t * id, uint8_t * interface) {
 
 	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
 
-	if (List_init(id, my_ip->sin_addr.s_addr) != 0) {
+	printf("%u\n", my_ip->sin_addr.s_addr);
+
+	if (List_init((uint8_t *)id, my_ip->sin_addr.s_addr) != 0) {
 		return -1;
 	}
 
@@ -101,6 +103,55 @@ Server_init(uint8_t * id, uint8_t * interface) {
 	return 0;
 }
 
+int
+Server_sctp_init(uint8_t *id, uint8_t *interface) {
+	struct sockaddr_in sin[1];
+
+	if((sock_server = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
+		perror("server: socket");
+		return -1;
+	}
+
+//	if(setsockopt(sock_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
+//		perror("server: setsockopt");
+//		return -1;
+//	}
+
+	sin->sin_family = AF_INET;
+	sin->sin_port = 6100;
+	sin->sin_addr.s_addr = INADDR_ANY;
+
+	if(bind(sock_server, (struct sockaddr *)sin, sizeof(*sin)) == -1) {
+		close(sock_server);
+		perror("server: bind");
+	}
+
+	struct ifreq ifr;
+	strcpy(ifr.ifr_name, interface);
+
+	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
+		perror("ioctl: ");
+		return -1;
+	}
+
+	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
+
+	if (List_init((uint8_t *)id, my_ip->sin_addr.s_addr) != 0) {
+		return -1;
+	}
+
+	if(listen(sock_server, HOLD_QUEUE) == -1) {
+		errno = EPERM;
+		return -1;
+	}
+
+	printf(GRN " | server is listening\t:::\n" RESET);
+
+
+
+	return 0;
+}
+
 void *
 Server_thread (void *args) {
 	int new_fd;
@@ -108,15 +159,27 @@ Server_thread (void *args) {
 	socklen_t addr_len;
 	char client_ip[INET_ADDRSTRLEN];
 
-	uint8_t * id = (uint8_t*)strtok((char*)args, " ");
-	uint8_t * interface = (uint8_t*)strtok(NULL, "\0");
+	char ** arg = args;
+
+	char * id;
+	char * interface;
+	char * protocol;
+
+	id = arg[1];
+	interface = arg[2];
+	protocol = arg[3];
 
 	struct threadpool *pool = Chat_get_recvpool();
 	struct task_t job;
 
-	if (Server_init(id, interface) != 0) {
+	if (strncmp(protocol, "-sctp", 5) == 0) {
+		if (Server_sctp_init(id, interface) != 0)
+			pthread_exit(0);
+	
+	} else {
+		if (Server_tcp_init(id, interface) != 0)
+			pthread_exit(0);
 
-		return NULL;
 	}
 
 	printf(GRN "## server_thread started\n" RESET);
