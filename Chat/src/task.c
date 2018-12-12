@@ -176,13 +176,16 @@ send_sign_in (void * arg) {
 	int ip_addr_offset = 1;
 	int id_offset;
 
+	uint32_t ip_t;
+
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
+		ip_t = htonl(p->ip);
 		//store in network byteorder
-		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
-		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
-		packet.payload[2 + ip_addr_offset] = (p->ip & 0x0000FF00) >> 8;
-		packet.payload[3 + ip_addr_offset] = (p->ip & 0x000000FF);
+		packet.payload[0 + ip_addr_offset] = (ip_t & 0xFF000000) >> 24;
+		packet.payload[1 + ip_addr_offset] = (ip_t & 0x00FF0000) >> 16;
+		packet.payload[2 + ip_addr_offset] = (ip_t & 0x0000FF00) >> 8;
+		packet.payload[3 + ip_addr_offset] = (ip_t & 0x000000FF);
 
 		id_offset = 4 + ip_addr_offset;
 		for(j = 0; j < ID_LENGTH; j++) {
@@ -261,7 +264,7 @@ send_msg (void * buffer) {
 	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0"); //take msg from buffer
 
-	uint16_t bufsize = sizeof(msg);
+	uint16_t bufsize = strlen(msg) + 1;
 
 	pthread_mutex_lock(&mutex);
 	struct member messeger = List_search_member_id(id);
@@ -339,13 +342,17 @@ send_member_list (void * arg) {
 
 	int i;
 	int j;
+
+	uint32_t ip_t;
+
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
+		ip_t = htonl(p->ip);
 		//store in network byteorder
-		packet.payload[0 + ip_addr_offset] = (p->ip & 0xFF000000) >> 24;
-		packet.payload[1 + ip_addr_offset] = (p->ip & 0x00FF0000) >> 16;
-		packet.payload[2 + ip_addr_offset] = (p->ip & 0x0000FF00) >> 8;
-		packet.payload[3 + ip_addr_offset] = (p->ip & 0x000000FF);
+		packet.payload[0 + ip_addr_offset] = (ip_t & 0xFF000000) >> 24;
+		packet.payload[1 + ip_addr_offset] = (ip_t & 0x00FF0000) >> 16;
+		packet.payload[2 + ip_addr_offset] = (ip_t & 0x0000FF00) >> 8;
+		packet.payload[3 + ip_addr_offset] = (ip_t & 0x000000FF);
 
 		id_offset = 4 + ip_addr_offset;
 		for(j = 0; j < ID_LENGTH; j++) {
@@ -479,6 +486,8 @@ recv_sign_in (uint8_t * payload,
 					| payload[3 + offset] << 8
 					| payload[4 + offset];
 
+		ip = ntohl(ip);
+
 		id = &payload[5 + offset];
 		
 		if (i == 0) {
@@ -580,6 +589,8 @@ recv_member_list (uint8_t *payload) {
 					| payload[2 + offset] << 16
 					| payload[3 + offset] << 8
 					| payload[4 + offset];
+
+		ip = ntohl(ip);
 
 		id = &payload[5 + offset];	
 

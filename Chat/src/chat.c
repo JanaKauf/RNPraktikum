@@ -82,12 +82,15 @@ Cmd_routine (void *args ) {
 				printf(MAG "Connecting to %s...\n" RESET, ip);
 		
 			} else if (strncmp(cmd, "/quit", 5) == 0) {
-				job_quit.routine_for_task = send_quit;
-				job_quit.arg = malloc(sizeof(msg));
-				job_quit.arg = msg;
-				Thpool_add_task(send_pool, job_quit);
+//				job_quit.routine_for_task = send_quit;
+//				job_quit.arg = malloc(sizeof(msg));
+//				job_quit.arg = msg;
+//				Thpool_add_task(send_pool, job_quit);
+
+				send_quit(msg);
 
 				printf("Quiting...\n");
+				pthread_exit(0);
 				break;
 		
 			} else if (strncmp(cmd, "/info", 5) == 0){
@@ -104,7 +107,6 @@ Cmd_routine (void *args ) {
 			
 	}
 
-	pthread_exit(0);
 	return NULL;
 }
 
@@ -117,7 +119,7 @@ main (int argc, char *argv[]) {
 	
 	}
 
-	char ** arg = malloc(sizeof(argv[argc]));
+	char ** arg;
 
 	arg = argv;
 
@@ -152,8 +154,6 @@ main (int argc, char *argv[]) {
 	pthread_join(cmd_control, NULL);
 	pthread_cancel(serv_thread);
 	pthread_join(serv_thread, NULL);
-	//TODO
-	free(arg);
 
 	Thpool_destroy(send_pool);
 	Thpool_free(send_pool);
@@ -163,7 +163,6 @@ main (int argc, char *argv[]) {
 		Thpool_free(recv_pool);
 	thrsafe:
 		Tasks_clean();
-
 		
 	return 0;
 

@@ -126,11 +126,6 @@ Server_sctp_init(uint8_t *id) {
 		return -1;
 	}
 
-//	if(setsockopt(sock_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
-//		perror("server: setsockopt");
-//		return -1;
-//	}
-
 	sin->sin_family = AF_INET;
 	sin->sin_port = 6100;
 	sin->sin_addr.s_addr = INADDR_ANY;
@@ -140,19 +135,17 @@ Server_sctp_init(uint8_t *id) {
 		perror("server: bind");
 	}
 
-//	struct ifreq ifr;
-//	strcpy(ifr.ifr_name, interface);
+	uint32_t ip;
 
-//	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
-//		perror("ioctl: ");
-//		return -1;
-//	}
+	if(get_my_ip(&ip) == 0) {
+		printf("couldnt find an interface..\n");
+		return -1;
+	}
 
-//	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
+	if (List_init((uint8_t *)id, ip) != 0) {
+		return -1;
+	}
 
-//	if (List_init((uint8_t *)id, my_ip->sin_addr.s_addr) != 0) {
-//		return -1;
-//	}
 
 	if(listen(sock_server, HOLD_QUEUE) == -1) {
 		errno = EPERM;
