@@ -112,8 +112,8 @@ Server_sctp_init(uint8_t *id) {
 	}
 
 	sin->sin_family = AF_INET;
-	sin->sin_port = 6100;
-	sin->sin_addr.s_addr = INADDR_ANY;
+	sin->sin_port = htons(6100);
+	sin->sin_addr.s_addr = htonl(INADDR_ANY);
 
 	if(bind(sock_sctp_server, (struct sockaddr *)sin, sizeof(*sin)) == -1) {
 		close(sock_sctp_server);
