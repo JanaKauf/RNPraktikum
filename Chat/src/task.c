@@ -179,7 +179,7 @@ send_sign_in (void * arg) {
 
 	uint32_t ip_t;
 
-	memset(packet.payload, '\0', 20 * 20);
+//	memset(packet.payload, '\0', 20 * 20);
 
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
@@ -231,7 +231,7 @@ send_quit (void * args) {
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(ID_LENGTH); //length
 	packet.crc = htonl(crc_32(me->id, strlen(me->id) + 1));
-	memset(packet.payload, '\0', 20 * 20);
+//	memset(packet.payload, '\0', 20 * 20);
 	strcpy((char*)packet.payload, (char*)me->id);
 
 	struct member * p = NULL;
@@ -301,7 +301,7 @@ send_msg (void * buffer) {
 	packet.length = htons(bufsize);
 	packet.crc = htonl(crc_32(msg, bufsize));
 
-	memset(packet.payload, '\0', 20 * 20);
+//	memset(packet.payload, '\0', 20 * 20);
 	strcpy((char*)packet.payload, (char*)msg);
 
 	send_to_server(&packet, sock_fd);
@@ -353,7 +353,7 @@ send_member_list (void * arg) {
 
 	uint32_t ip_t;
 
-	memset(packet.payload, '\0', 20 * 20);
+//	memset(packet.payload, '\0', 20 * 20);
 
 	//set content of member list
 	for(i = 0; i < List_no_of_members(); i++) {
@@ -402,7 +402,7 @@ send_error(void *buffer) {
 	packet.typ = ERROR; //type
 	packet.length = htons(string_length); //length
 	packet.crc = htons(crc_32(&error_args->error_code, ERROR_CODE_LENGTH));
-	memset(packet.payload, '\0', 20 * 20);
+//	memset(packet.payload, '\0', 20 * 20);
 	strcpy((char*)packet.payload, (char*)&error_args->error_code);
 
 	sock_fd = Client_connect(error_args->ip);
