@@ -90,6 +90,7 @@ send_all_data (struct packet *packet, int *length, int sockfd) {
 	while (total < *length) {
 		n = send(sockfd, packet+total, bytes_left, 0);
 		if (n == -1) {
+			perror("send_all_data: ");
 			break;
 		}
 		total += n;
@@ -224,7 +225,7 @@ send_quit (void * args) {
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(ID_LENGTH); //length
-	packet.crc = htonl(crc_32(me->id, ID_LENGTH));
+	packet.crc = htonl(crc_32(me->id, strlen(me->id) + 1));
 	strcpy((char*)packet.payload, (char*)me->id);
 
 	struct member * p = NULL;

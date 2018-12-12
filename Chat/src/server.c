@@ -80,8 +80,6 @@ Server_tcp_init(char * id) {
 
 	uint32_t ip;
 
-	//get my ip
-
 	if(get_my_ip(&ip) == 0) {
 		printf("couldnt find an interface..\n");
 		return -1;
@@ -90,21 +88,6 @@ Server_tcp_init(char * id) {
 	if (List_init((uint8_t *)id, ip) != 0) {
 		return -1;
 	}
-
-//	struct ifreq ifr;
-//	strcpy(ifr.ifr_name, interface);
-//
-//	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
-//		perror("ioctl: ");
-//		return -1;
-//	}
-//
-
-
-//	printf("%u\n", my_ip->sin_addr.s_addr);
-//	TODO only compatible with ipv4..
-
-
 
 	if(listen(sock_server, HOLD_QUEUE) == -1) {
 		errno = EPERM;
@@ -121,7 +104,7 @@ int
 Server_sctp_init(uint8_t *id) {
 	struct sockaddr_in sin[1];
 
-	if((sock_server = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
+	if((sock_server = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
 		perror("server: socket");
 		return -1;
 	}
@@ -133,6 +116,11 @@ Server_sctp_init(uint8_t *id) {
 	if(bind(sock_server, (struct sockaddr *)sin, sizeof(*sin)) == -1) {
 		close(sock_server);
 		perror("server: bind");
+	}
+
+	if(setsockopt(sock_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
+		perror("server: setsockopt");
+		return -1;
 	}
 
 	uint32_t ip;
@@ -219,7 +207,6 @@ Server_thread (void *args) {
 
 int
 get_my_ip(uint32_t* ip) {
-	printf("get my ip\n");
 	struct ifaddrs *ifaddr, *ifa;
 	int family, s;
 	char host[NI_MAXHOST];
@@ -244,7 +231,7 @@ get_my_ip(uint32_t* ip) {
 				printf("getnameinfo() failed: %s\n", gai_strerror(s));
 			}
 			if(strncmp(host, "127", 3) != 0) {  //&& strncmp(host, "::1", 3) != 0 && strncmp(host, "fe80::", 6) != 0
-				printf("%s \n", ifa->ifa_name);
+				printf("\t\t%s \n", ifa->ifa_name);
 				printf("\t\taddress: <%s>\n", host);
 
 				*ip = ((struct sockaddr_in*)(ifa->ifa_addr))->sin_addr.s_addr;
