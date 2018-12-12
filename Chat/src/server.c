@@ -236,6 +236,7 @@ get_my_ip(uint32_t* ip) {
 			if(s != 0) {
 				printf("getnameinfo() failed: %s\n", gai_strerror(s));
 			}
+			//TODO 10.16.x.x - 10.31.x.x not filtered
 			if(strncmp(host, "127", 3) != 0 && strncmp(host, "192.168", 7) != 0) {  //&& strncmp(host, "::1", 3) != 0 && strncmp(host, "fe80::", 6) != 0
 				printf("\t\t%s \n", ifa->ifa_name);
 				printf("\t\taddress: <%s>\n", host);
