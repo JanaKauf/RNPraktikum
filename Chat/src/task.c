@@ -437,7 +437,7 @@ send_update (uint8_t * payload) {
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(size); //length
 	packet.crc = htonl(crc_32(packet.payload, packet.length));
-	printf("send_update, crc: %u ", packet.crc);
+	printf("send_update, crc: %u ", ntohl(packet.crc));
 	memcpy(packet.payload, payload, size);
 
 	pthread_mutex_lock(&mutex);
