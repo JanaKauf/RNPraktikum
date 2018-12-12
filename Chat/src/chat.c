@@ -82,10 +82,10 @@ Cmd_routine (void *args ) {
 				printf(MAG "Connecting to %s...\n" RESET, ip);
 		
 			} else if (strncmp(cmd, "/quit", 5) == 0) {
-				job_quit.routine_for_task = send_quit;
-				job_quit.arg = malloc(sizeof(msg));
-				job_quit.arg = msg;
-				Thpool_add_task(send_pool, job_quit);
+//				job_quit.routine_for_task = send_quit;
+//				job_quit.arg = malloc(sizeof(msg));
+//				job_quit.arg = msg;
+//				Thpool_add_task(send_pool, job_quit);
 
 				printf("Quiting...\n");
 				break;
@@ -112,7 +112,7 @@ int
 main (int argc, char *argv[]) {
 
 	if (argc != 3) {
-		printf(RED "usage: ./chat <ID> <Interface>\n" RESET);
+		printf(RED "usage: ./chat <ID> <Protokoll>\n" RESET);
 		return -1;
 	
 	}
@@ -152,7 +152,7 @@ main (int argc, char *argv[]) {
 	pthread_join(cmd_control, NULL);
 	pthread_cancel(serv_thread);
 	pthread_join(serv_thread, NULL);
-
+	//TODO
 	free(arg);
 
 	Thpool_destroy(send_pool);

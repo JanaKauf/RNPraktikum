@@ -140,7 +140,6 @@ List_delete_member (uint8_t id[16]) {
 	}
 
 	p->next = del_member->next;
-
 	free(del_member);
 	counter--;
 

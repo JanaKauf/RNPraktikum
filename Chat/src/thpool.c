@@ -212,7 +212,6 @@ Thpool_free (struct threadpool *pool) {
 			perror("thpool: pthread_mutex_destroy");
 		pthread_cond_destroy(&(pool->cond));
     }
-
     free(pool);
     return 0;
 }

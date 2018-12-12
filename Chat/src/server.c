@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/wait.h>
-#include <sys/ioctl.h>
+//#include <sys/ioctl.h>
 #include <net/if.h>
 #include <linux/if_link.h>
 #include <ifaddrs.h>
@@ -176,18 +176,16 @@ Server_thread (void *args) {
 	char ** arg = args;
 
 	char * id;
-	char * interface;
 	char * protocol;
 
-	id = arg[1];
-	protocol = arg[2];
-	//interface = arg[2];
+	id = ((char*)args)[1];
+	protocol = ((char*)args)[2];
 
 	struct threadpool *pool = Chat_get_recvpool();
 	struct task_t job;
 
 	if (strncmp(protocol, "-sctp", 5) == 0) {
-		if (Server_sctp_init(id) != 0)
+		if (Server_sctp_init((uint8_t*)id) != 0)
 			pthread_exit(0);
 	
 	} else {
@@ -229,44 +227,42 @@ Server_thread (void *args) {
 int
 get_my_ip(uint32_t* ip) {
 	printf("get my ip\n");
-		struct ifaddrs *ifaddr, *ifa;
-		int family, s;
-		char host[NI_MAXHOST];
-		int success = 0;
+	struct ifaddrs *ifaddr, *ifa;
+	int family, s;
+	char host[NI_MAXHOST];
+	int success = 0;
 
-		if (getifaddrs(&ifaddr) == -1) {
-			perror("getifaddrs");
-			return 0;
+	if (getifaddrs(&ifaddr) == -1) {
+		perror("getifaddrs");
+		return 0;
+	}
+
+	for (ifa = ifaddr; ifa != NULL && (success == 0); ifa = ifa->ifa_next) {
+		if (ifa->ifa_addr == NULL) {
+			continue;
 		}
+		family = ifa->ifa_addr->sa_family;
 
-		for (ifa = ifaddr; ifa != NULL && (success == 0); ifa = ifa->ifa_next) {
-			if (ifa->ifa_addr == NULL) {
+		size_t size;
+		if(family == AF_INET) {
+			size = sizeof(struct sockaddr_in);
+			s = getnameinfo(ifa->ifa_addr, size, host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+			if(s != 0) {
+				printf("getnameinfo() failed: %s\n", gai_strerror(s));
+			}
+			if(strncmp(host, "127", 3) != 0) {  //&& strncmp(host, "::1", 3) != 0 && strncmp(host, "fe80::", 6) != 0
+				printf("%s \n", ifa->ifa_name);
+				printf("\t\taddress: <%s>\n", host);
+
+				*ip = ((struct sockaddr_in*)(ifa->ifa_addr))->sin_addr.s_addr;
+
+				char str[INET_ADDRSTRLEN];
+
+				success = 1;
 				continue;
 			}
-			family = ifa->ifa_addr->sa_family;
-
-			size_t size;
-			if(family == AF_INET) {
-				size = sizeof(struct sockaddr_in);
-				s = getnameinfo(ifa->ifa_addr, size, host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-				if(s != 0) {
-					printf("getnameinfo() failed: %s\n", gai_strerror(s));
-				}
-				if(strncmp(host, "127", 3) != 0) {  //&& strncmp(host, "::1", 3) != 0 && strncmp(host, "fe80::", 6) != 0
-					printf("%s \n", ifa->ifa_name);
-					printf("\t\taddress: <%s>\n", host);
-
-					*ip = ((struct sockaddr_in*)(ifa->ifa_addr))->sin_addr.s_addr;
-
-					char str[INET_ADDRSTRLEN];
-//					printf("Very important print!!!\nip for server_init: %s\n",
-//							inet_ntop(AF_INET, &(my_ip->sin_addr), str, INET_ADDRSTRLEN));
-
-					success = 1;
-					continue;
-				}
-			}
 		}
-		freeifaddrs(ifaddr);
-		return success;
+	}
+	freeifaddrs(ifaddr);
+	return success;
 }
