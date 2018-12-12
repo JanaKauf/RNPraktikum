@@ -111,7 +111,7 @@ Cmd_routine (void *args ) {
 int
 main (int argc, char *argv[]) {
 
-	if (argc != 4) {
+	if (argc != 3) {
 		printf(RED "usage: ./chat <ID> <Interface>\n" RESET);
 		return -1;
 	
@@ -141,7 +141,7 @@ main (int argc, char *argv[]) {
 		goto recvfree;
 	}
 
-	Client_protocol(argv[3]);
+	Client_protocol(argv[2]);
 
 	printf(MAG "-- Serv_thread create...\n" RESET);
 	pthread_create(&serv_thread, NULL, Server_thread, arg);

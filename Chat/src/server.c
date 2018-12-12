@@ -7,20 +7,22 @@
 
 #include "server.h"
 
-#include <stdio.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/wait.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <linux/if_link.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
 #include <signal.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
+#include <stdio.h>
 
 #include "thpool.h"
 #include "task.h"
@@ -35,7 +37,7 @@ struct sockaddr_storage their_addr;
 int yes = 1;
 
 int
-Server_tcp_init(char * id, char * interface) {
+Server_tcp_init(char * id) {
 	struct addrinfo *servlist, *p;
 
 	memset(&hints, 0, sizeof(hints));
@@ -76,21 +78,33 @@ Server_tcp_init(char * id, char * interface) {
 		return -1;
 	}
 
-	struct ifreq ifr;
-	strcpy(ifr.ifr_name, interface);
+	uint32_t ip;
 
-	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
-		perror("ioctl: ");
+	//get my ip
+
+	if(get_my_ip(&ip) == 0) {
+		printf("couldnt find an interface..\n");
 		return -1;
 	}
 
-	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
-
-	printf("%u\n", my_ip->sin_addr.s_addr);
-
-	if (List_init((uint8_t *)id, my_ip->sin_addr.s_addr) != 0) {
+	if (List_init((uint8_t *)id, ip) != 0) {
 		return -1;
 	}
+
+//	struct ifreq ifr;
+//	strcpy(ifr.ifr_name, interface);
+//
+//	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
+//		perror("ioctl: ");
+//		return -1;
+//	}
+//
+
+
+//	printf("%u\n", my_ip->sin_addr.s_addr);
+//	TODO only compatible with ipv4..
+
+
 
 	if(listen(sock_server, HOLD_QUEUE) == -1) {
 		errno = EPERM;
@@ -104,7 +118,7 @@ Server_tcp_init(char * id, char * interface) {
 }
 
 int
-Server_sctp_init(uint8_t *id, uint8_t *interface) {
+Server_sctp_init(uint8_t *id) {
 	struct sockaddr_in sin[1];
 
 	if((sock_server = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
@@ -126,19 +140,19 @@ Server_sctp_init(uint8_t *id, uint8_t *interface) {
 		perror("server: bind");
 	}
 
-	struct ifreq ifr;
-	strcpy(ifr.ifr_name, interface);
+//	struct ifreq ifr;
+//	strcpy(ifr.ifr_name, interface);
 
-	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
-		perror("ioctl: ");
-		return -1;
-	}
+//	if (ioctl(sock_server, SIOCGIFADDR, &ifr) != 0) {
+//		perror("ioctl: ");
+//		return -1;
+//	}
 
-	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
+//	struct sockaddr_in * my_ip = (struct sockaddr_in *) &ifr.ifr_addr;
 
-	if (List_init((uint8_t *)id, my_ip->sin_addr.s_addr) != 0) {
-		return -1;
-	}
+//	if (List_init((uint8_t *)id, my_ip->sin_addr.s_addr) != 0) {
+//		return -1;
+//	}
 
 	if(listen(sock_server, HOLD_QUEUE) == -1) {
 		errno = EPERM;
@@ -166,18 +180,18 @@ Server_thread (void *args) {
 	char * protocol;
 
 	id = arg[1];
-	interface = arg[2];
-	protocol = arg[3];
+	protocol = arg[2];
+	//interface = arg[2];
 
 	struct threadpool *pool = Chat_get_recvpool();
 	struct task_t job;
 
 	if (strncmp(protocol, "-sctp", 5) == 0) {
-		if (Server_sctp_init(id, interface) != 0)
+		if (Server_sctp_init(id) != 0)
 			pthread_exit(0);
 	
 	} else {
-		if (Server_tcp_init(id, interface) != 0)
+		if (Server_tcp_init(id) != 0)
 			pthread_exit(0);
 
 	}
@@ -209,4 +223,50 @@ Server_thread (void *args) {
 		Thpool_add_task(pool, job);
 	}
 
+}
+
+
+int
+get_my_ip(uint32_t* ip) {
+	printf("get my ip\n");
+		struct ifaddrs *ifaddr, *ifa;
+		int family, s;
+		char host[NI_MAXHOST];
+		int success = 0;
+
+		if (getifaddrs(&ifaddr) == -1) {
+			perror("getifaddrs");
+			return 0;
+		}
+
+		for (ifa = ifaddr; ifa != NULL && (success == 0); ifa = ifa->ifa_next) {
+			if (ifa->ifa_addr == NULL) {
+				continue;
+			}
+			family = ifa->ifa_addr->sa_family;
+
+			size_t size;
+			if(family == AF_INET) {
+				size = sizeof(struct sockaddr_in);
+				s = getnameinfo(ifa->ifa_addr, size, host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+				if(s != 0) {
+					printf("getnameinfo() failed: %s\n", gai_strerror(s));
+				}
+				if(strncmp(host, "127", 3) != 0) {  //&& strncmp(host, "::1", 3) != 0 && strncmp(host, "fe80::", 6) != 0
+					printf("%s \n", ifa->ifa_name);
+					printf("\t\taddress: <%s>\n", host);
+
+					*ip = ((struct sockaddr_in*)(ifa->ifa_addr))->sin_addr.s_addr;
+
+					char str[INET_ADDRSTRLEN];
+//					printf("Very important print!!!\nip for server_init: %s\n",
+//							inet_ntop(AF_INET, &(my_ip->sin_addr), str, INET_ADDRSTRLEN));
+
+					success = 1;
+					continue;
+				}
+			}
+		}
+		freeifaddrs(ifaddr);
+		return success;
 }
