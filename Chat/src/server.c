@@ -38,6 +38,7 @@ int yes = 1;
 
 int
 Server_tcp_init(char * id) {
+	printf("TCP\n");
 	struct addrinfo *servlist, *p;
 
 	memset(&hints, 0, sizeof(hints));
@@ -102,6 +103,7 @@ Server_tcp_init(char * id) {
 
 int
 Server_sctp_init(uint8_t *id) {
+	printf("SCTP\n");
 	struct sockaddr_in sin[1];
 
 	if((sock_server = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
