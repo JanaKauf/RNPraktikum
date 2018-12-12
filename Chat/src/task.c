@@ -230,7 +230,7 @@ send_quit (void * args) {
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
 	packet.length = htons(strlen(me->id) + 1); //length
-	packet.crc = htonl(crc_32(me->id, strlen(me->id) + 1));
+	packet.crc = htonl(crc_32(me->id, packet.length));
 //	memset(packet.payload, '\0', 20 * 20);
 	strcpy((char*)packet.payload, (char*)me->id);
 
@@ -436,7 +436,7 @@ send_update (uint8_t * payload) {
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(size); //length
-	packet.crc = htonl(crc_32(packet.payload, sizeof(payload)));
+	packet.crc = htonl(crc_32(packet.payload, packet.length));
 
 	memcpy(packet.payload, payload, size);
 
