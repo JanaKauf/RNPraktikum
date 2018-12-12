@@ -437,7 +437,7 @@ send_update (uint8_t * payload) {
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(size); //length
 	packet.crc = htonl(crc_32(packet.payload, packet.length));
-	printf("send_update, crc: %u", packet.crc);
+	printf("send_update, crc: %u ", packet.crc);
 	memcpy(packet.payload, payload, size);
 
 	pthread_mutex_lock(&mutex);
@@ -728,7 +728,8 @@ recv_from_client (void *sockfd) {
  * return 0
  */
 int crc_is_equal(uint8_t* strToCheck, uint16_t strLength, uint32_t crcToCheck) {
-	return crc_32(strToCheck, strLength) == crcToCheck;
+	uint crc = crc_32(strToCheck, strLength);
+	return crc == crcToCheck;
 }
 
 
