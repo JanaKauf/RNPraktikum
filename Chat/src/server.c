@@ -31,7 +31,8 @@
 #include "chat.h"
 
 
-int sock_server;
+int sock_tcp_server;
+int sock_sctp_server;
 struct addrinfo hints;
 struct sockaddr_storage their_addr;
 int yes = 1;
@@ -52,18 +53,18 @@ Server_tcp_init(char * id) {
 	}
 
 	for(p = servlist; p != NULL; p = p->ai_next) {
-		if((sock_server = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+		if((sock_tcp_server = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
 			perror("server: socket");
 			continue;
 		}
 
-		if(setsockopt(sock_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
+		if(setsockopt(sock_tcp_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 			perror("server: setsockopt");
 			return -1;
 		}
 
-		if(bind(sock_server, p->ai_addr, p->ai_addrlen) == -1) {
-			close(sock_server);
+		if(bind(sock_tcp_server, p->ai_addr, p->ai_addrlen) == -1) {
+			close(sock_tcp_server);
 			perror("server: bind");
 			continue;
 		}
@@ -90,7 +91,7 @@ Server_tcp_init(char * id) {
 		return -1;
 	}
 
-	if(listen(sock_server, HOLD_QUEUE) == -1) {
+	if(listen(sock_tcp_server, HOLD_QUEUE) == -1) {
 		errno = EPERM;
 		return -1;
 	}
@@ -106,7 +107,7 @@ Server_sctp_init(uint8_t *id) {
 	printf("SCTP\n");
 	struct sockaddr_in sin[1];
 
-	if((sock_server = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
+	if((sock_sctp_server = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
 		perror("server: socket");
 		return -1;
 	}
@@ -115,12 +116,12 @@ Server_sctp_init(uint8_t *id) {
 	sin->sin_port = 6100;
 	sin->sin_addr.s_addr = INADDR_ANY;
 
-	if(bind(sock_server, (struct sockaddr *)sin, sizeof(*sin)) == -1) {
-		close(sock_server);
+	if(bind(sock_sctp_server, (struct sockaddr *)sin, sizeof(*sin)) == -1) {
+		close(sock_sctp_server);
 		perror("server: bind");
 	}
 
-	if(setsockopt(sock_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
+	if(setsockopt(sock_sctp_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 		perror("server: setsockopt");
 		return -1;
 	}
@@ -137,7 +138,7 @@ Server_sctp_init(uint8_t *id) {
 	}
 
 
-	if(listen(sock_server, HOLD_QUEUE) == -1) {
+	if(listen(sock_sctp_server, HOLD_QUEUE) == -1) {
 		errno = EPERM;
 		return -1;
 	}
@@ -184,7 +185,11 @@ Server_thread (void *args) {
 	while(1) {
 		
         addr_len = sizeof client_addr;
-        new_fd = accept(sock_server, (struct sockaddr *)&client_addr, &addr_len);
+        if (strncmp(protocol, "-sctp", 5) == 0) {
+        	new_fd = accept(sock_sctp_server, (struct sockaddr *)&client_addr, &addr_len);
+        } else {
+        	new_fd = accept(sock_tcp_server, (struct sockaddr *)&client_addr, &addr_len);
+        }
 
         if (new_fd == -1) {
 			perror("accept");
