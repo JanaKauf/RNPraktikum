@@ -12,7 +12,6 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/wait.h>
-//#include <sys/ioctl.h>
 #include <net/if.h>
 #include <linux/if_link.h>
 #include <ifaddrs.h>

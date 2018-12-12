@@ -34,7 +34,7 @@ Client_connect (char * server_ip) {
 		serv.sin_port = htons(6100);
 		serv.sin_addr.s_addr = inet_addr(server_ip);
 
-		sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
+		sock_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
 		if (sock_fd == -1) {
 			return -1;
 		}
