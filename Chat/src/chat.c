@@ -82,10 +82,10 @@ Cmd_routine (void *args ) {
 				printf(MAG "Connecting to %s...\n" RESET, ip);
 		
 			} else if (strncmp(cmd, "/quit", 5) == 0) {
-//				job_quit.routine_for_task = send_quit;
-//				job_quit.arg = malloc(sizeof(msg));
-//				job_quit.arg = msg;
-//				Thpool_add_task(send_pool, job_quit);
+				job_quit.routine_for_task = send_quit;
+				job_quit.arg = malloc(sizeof(msg));
+				job_quit.arg = msg;
+				Thpool_add_task(send_pool, job_quit);
 
 				printf("Quiting...\n");
 				break;

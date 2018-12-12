@@ -178,8 +178,8 @@ Server_thread (void *args) {
 	char * id;
 	char * protocol;
 
-	id = ((char*)args)[1];
-	protocol = ((char*)args)[2];
+	id = arg[1];
+	protocol = arg[2];
 
 	struct threadpool *pool = Chat_get_recvpool();
 	struct task_t job;
