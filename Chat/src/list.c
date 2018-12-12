@@ -182,8 +182,8 @@ List_print (void) {
 
 	for (p = list; p != NULL; p = p->next){
 		ip_addr.s_addr = p->ip;
-		printf("id\t\t%s\n", p->id);
-		printf("ip\t\t%s\n", inet_ntoa(ip_addr));
+		printf("\t\t%s\n", p->id);
+		printf("\t\t%s\n", inet_ntoa(ip_addr));
 		printf("\n");
 	}
 
