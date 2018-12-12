@@ -229,7 +229,7 @@ send_quit (void * args) {
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
-	packet.length = htons(strlen(me->id) + 1)); //length
+	packet.length = htons(strlen(me->id) + 1); //length
 	packet.crc = htonl(crc_32(me->id, strlen(me->id) + 1));
 //	memset(packet.payload, '\0', 20 * 20);
 	strcpy((char*)packet.payload, (char*)me->id);
