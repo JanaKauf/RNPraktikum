@@ -437,7 +437,7 @@ send_update (uint8_t * payload) {
 	packet.typ = MEMBER_LIST; //type
 	packet.length = htons(size); //length
 	packet.crc = htonl(crc_32(packet.payload, packet.length));
-
+	printf("send_update, crc: %u", packet.crc);
 	memcpy(packet.payload, payload, size);
 
 	pthread_mutex_lock(&mutex);
@@ -686,8 +686,8 @@ recv_from_client (void *sockfd) {
 		if(!crc_is_equal((uint8_t *)&pck.payload, ntohs(pck.length), ntohl(pck.crc))) {
 			struct in_addr addr;
 			addr.s_addr = client_ip.sin_addr.s_addr;
-			printf(RED "false crc-sum on packet from %s, ip: %s\n" RESET,
-					List_search_member_ip(client_ip.sin_addr.s_addr).id , inet_ntoa(addr));
+			printf(RED "false crc-sum %u on packet from %s, ip: %s\n" RESET,
+					pck.crc, List_search_member_ip(client_ip.sin_addr.s_addr).id , inet_ntoa(addr));
 		}
 				
 		switch (pck.typ) {
