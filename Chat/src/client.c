@@ -32,7 +32,7 @@ Client_connect (char * server_ip) {
 
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(6100);
-		serv.sin_addr.s_addr = htonl(inet_addr(server_ip));
+		serv.sin_addr.s_addr = inet_addr(server_ip);
 
 		sock_fd = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP);
 		if (sock_fd == -1) {
