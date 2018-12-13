@@ -435,9 +435,10 @@ send_update (uint8_t * payload) {
 
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
+	memcpy(packet.payload, payload, size); //TODO eventually try strcpy?
 	packet.crc = htonl(crc_32(packet.payload, size));
 	packet.length = htons(size); //length
-	memcpy(packet.payload, payload, size); //TODO eventually try strcpy?
+
 
 	pthread_mutex_lock(&mutex);
 	for (p = List_get_list()->next; p != NULL; p = p->next) {
