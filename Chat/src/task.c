@@ -225,12 +225,12 @@ send_quit (void * args) {
 	struct packet packet;
 
 	struct member *me = List_get_list();
-
+	uint16_t size = strlen(me->id) + 1;
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
-	packet.length = htons(strlen(me->id) + 1); //length
-	packet.crc = htonl(crc_32(me->id, packet.length));
+	packet.length = htons(size); //length
+	packet.crc = htonl(crc_32(me->id, size));
 //	memset(packet.payload, '\0', 20 * 20);
 	strcpy((char*)packet.payload, (char*)me->id);
 
@@ -435,9 +435,11 @@ send_update (uint8_t * payload) {
 
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
-	memcpy(packet.payload, payload, size); //TODO eventually try strcpy?
+	memcpy (packet.payload, payload, size); //TODO eventually try strcpy?
 	packet.crc = htonl(crc_32(packet.payload, size));
 	packet.length = htons(size); //length
+
+	printf("send_update: crc %u", crc_32(packet.payload, size));
 
 
 	pthread_mutex_lock(&mutex);
@@ -729,6 +731,7 @@ recv_from_client (void *sockfd) {
  */
 int crc_is_equal(uint8_t* strToCheck, uint16_t strLength, uint32_t crcToCheck) {
 	uint crc = crc_32(strToCheck, strLength);
+	printf("recv_from_client: %u", crc);
 	return crc == crcToCheck;
 }
 
