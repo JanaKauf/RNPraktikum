@@ -67,7 +67,6 @@ Server_tcp_init(char * id) {
 			perror("server: bind");
 			continue;
 		}
-		printf("%u\n", p->ai_addr);
 		break;
 	}
 
@@ -242,8 +241,6 @@ get_my_ip(uint32_t* ip) {
 				printf("\t\taddress: <%s>\n", host);
 
 				*ip = ((struct sockaddr_in*)(ifa->ifa_addr))->sin_addr.s_addr;
-
-				char str[INET_ADDRSTRLEN];
 
 				success = 1;
 				continue;

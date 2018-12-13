@@ -193,7 +193,7 @@ send_sign_in (void * arg) {
 		id_offset = 4 + ip_addr_offset;
 		for(j = 0; j < ID_LENGTH; j++) {
 			packet.payload[id_offset + j] = p->id[j];
-			if (p->id[j] == '/0') {
+			if (p->id[j] == '\0') {
 				break;
 			}
 		}
@@ -225,7 +225,7 @@ send_quit (void * args) {
 	struct packet packet;
 
 	struct member *me = List_get_list();
-	uint16_t size = strlen(me->id) + 1;
+	uint16_t size = strlen((char*)me->id) + 1;
 	//header of member list
 	packet.version = VERSION; //version
 	packet.typ = SIGN_OUT; //type
@@ -271,7 +271,7 @@ send_msg (void * buffer) {
 	id++; //remove @ from id
 	uint8_t * msg = (uint8_t *)strtok(NULL, "\n\0"); //take msg from buffer
 
-	uint16_t bufsize = strlen(msg) + 1;
+	uint16_t bufsize = strlen((char*)msg) + 1;
 
 	pthread_mutex_lock(&mutex);
 	struct member messeger = List_search_member_id(id);
@@ -431,15 +431,12 @@ send_update (uint8_t * payload) {
 
 	uint16_t size = (payload[0] * SIZE_OF_MEMBER_IN_BYTES) + 1;
 
-	int i;
-
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
 	memcpy (packet.payload, payload, size);
 	packet.crc = htonl(crc_32(packet.payload, size));
 	packet.length = htons(size); //length
 
-	printf("send_update: crc %u", crc_32(packet.payload, size));
 
 
 	pthread_mutex_lock(&mutex);
@@ -480,11 +477,6 @@ recv_sign_in (uint8_t * payload,
 	uint8_t no_member = payload[0];
 	uint32_t ip;
 	uint8_t *id;
-
-	struct threadpool * send_pool;
-	send_pool = Chat_get_sendpool();
-
-	struct task_t job;
 
 	int offset = 0;
 
@@ -582,11 +574,6 @@ recv_member_list (uint8_t *payload) {
 	uint8_t no_member = payload[0];
 	uint32_t ip;
 	uint8_t *id;
-
-	struct threadpool * send_pool;
-	send_pool = Chat_get_sendpool();
-
-	struct task_t job;
 
 	int offset = 0;
 
@@ -730,9 +717,7 @@ recv_from_client (void *sockfd) {
  * return 0
  */
 int crc_is_equal(uint8_t* strToCheck, uint16_t strLength, uint32_t crcToCheck) {
-	uint crc = crc_32(strToCheck, strLength);
-	printf("recv_from_client, crc: %u \n", crc);
-	return crc == crcToCheck;
+	return crc_32(strToCheck, strLength) == crcToCheck;
 }
 
 

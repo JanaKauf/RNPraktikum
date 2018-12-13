@@ -39,7 +39,6 @@ Cmd_routine (void *args ) {
 
 	struct task_t job_msg;
 	struct task_t job_sign;
-	struct task_t job_quit;
 
 	char * ip;
 

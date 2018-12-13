@@ -27,8 +27,7 @@ Client_protocol(char *_protocol) {
 int
 Client_connect (char * server_ip) {
 	if (strcmp(protocol, "-sctp") == 0) {
-		printf("CLIENT SCTP\n");
-		struct sockaddr_in sin[1], serv;
+		struct sockaddr_in serv; //sin[1],
 
 		serv.sin_family = AF_INET;
 		serv.sin_port = htons(6100);
@@ -44,7 +43,6 @@ Client_connect (char * server_ip) {
 		}
 
 	} else {
-		printf("CLIENT TCP\n");
 		printf("Connect %s\n", server_ip);
 		struct addrinfo *servlist, *p;
 		struct addrinfo hints;
