@@ -232,7 +232,7 @@ send_quit (void * args) {
 	packet.length = htons(size); //length
 	packet.crc = htonl(crc_32(me->id, size));
 //	memset(packet.payload, '\0', 20 * 20);
-	memcpy((char*)packet.payload, (char*)me->id);
+	memcpy((char*)packet.payload, (char*)me->id, size);
 
 	struct member * p = NULL;
 	struct in_addr i_ip;
