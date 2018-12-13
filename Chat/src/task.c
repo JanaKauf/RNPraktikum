@@ -435,7 +435,7 @@ send_update (uint8_t * payload) {
 
 	packet.version = VERSION; //version
 	packet.typ = MEMBER_LIST; //type
-	memcpy (packet.payload, payload, size); //TODO eventually try strcpy?
+	memcpy (packet.payload, payload, size);
 	packet.crc = htonl(crc_32(packet.payload, size));
 	packet.length = htons(size); //length
 
@@ -731,7 +731,7 @@ recv_from_client (void *sockfd) {
  */
 int crc_is_equal(uint8_t* strToCheck, uint16_t strLength, uint32_t crcToCheck) {
 	uint crc = crc_32(strToCheck, strLength);
-	printf("recv_from_client: %u", crc);
+	printf("recv_from_client, crc: %u \n", crc);
 	return crc == crcToCheck;
 }
 
