@@ -524,13 +524,17 @@ recv_sign_in (uint8_t * payload,
  */
 
 int
-recv_quit (uint8_t *id) {
+recv_quit (uint8_t *id_f, const uint32_t ip, uint16_t lenght) {
 	printf(CYN "#\t#\t#\t#\trecv_quit()\t#\t#\t#\t#\n" RESET);
+
+	uint8_t * id;
+
+	strncpy(id, id_f, lenght);
 
 	printf("@%s: quit\n", id);
 
 	pthread_mutex_lock(&mutex);
-	if (List_delete_member(id) != 0) {
+	if (List_delete_member(ip) != 0) {
 		perror(RED "recv_quit: id not found" RESET);
 		return -1;
 	}
@@ -684,7 +688,7 @@ recv_from_client (void *sockfd) {
 				recv_sign_in(pck.payload, client_ip.sin_addr.s_addr, new_fd);
 				break;
 			case SIGN_OUT:
-				recv_quit(pck.payload);
+				recv_quit(pck.payload, client_ip.sin_addr.s_addr, ntohs(pck.length));
 				if (close(new_fd) != 0)
 					perror(RED "Close: recv_from_client" RESET);	
 				break;

@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <netinet/sctp.h>
 #include <sys/wait.h>
 #include <net/if.h>
 #include <linux/if_link.h>
@@ -105,6 +106,13 @@ Server_sctp_init(uint8_t *id) {
 	printf("SCTP\n");
 	struct sockaddr_in sin[1];
 
+	struct sctp_paddrparams paddr;
+
+	memset(&paddr, 0, sizeof(paddr));
+
+	paddr.spp_address.ss_family = AF_INET;
+	paddr.spp_flags = SPP_HB_ENABLE;
+	paddr.spp_hbinterval = 15000;
 	if((sock_sctp_server = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP)) == -1) {
 		perror("server: socket");
 		return -1;
@@ -121,6 +129,12 @@ Server_sctp_init(uint8_t *id) {
 
 	if(setsockopt(sock_sctp_server, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int))== -1) {
 		perror("server: setsockopt");
+		return -1;
+	}
+
+	int sso = setsockopt(sock_sctp_server, SOL_SOCKET, SCTP_PEER_ADDR_PARAMS, &paddr, sizeof(paddr));
+	if (sso < 0) {
+		perror("[inet] inet_create_socket: setsockopt() error");
 		return -1;
 	}
 

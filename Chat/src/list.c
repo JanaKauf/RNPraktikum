@@ -118,7 +118,7 @@ List_search_member_ip (uint32_t ip) {
 }
 
 int
-List_delete_member (uint8_t id[16]) {
+List_delete_member (uint32_t ip) {
 	member_t *del_member = NULL;
 	member_t *p = NULL;
 	
@@ -128,7 +128,7 @@ List_delete_member (uint8_t id[16]) {
 	}
 
 	for (p = list; p->next != NULL; p = p->next){
-		if (strncmp((char*)p->next->id, (char*)id, 16) == 0) {
+		if (p->next->id == ip) {
 			del_member = p->next;
 			break;
 		}

@@ -18,7 +18,7 @@ extern struct member List_search_member_id (uint8_t id[16]);
 
 extern struct member List_search_member_ip (uint32_t ip);
 
-extern int List_delete_member (uint8_t id[16]);
+extern int List_delete_member (uint32_t ip);
 
 extern int List_delete (void);
 
