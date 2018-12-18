@@ -529,13 +529,13 @@ recv_quit (uint8_t *id_f, const uint32_t ip, uint16_t lenght) {
 
 	uint8_t * id;
 
-	strncpy(id, id_f, lenght);
+	strncpy(id, id_f, lenght - 1);
 
 	printf("@%s: quit\n", id);
 
 	pthread_mutex_lock(&mutex);
-	if (List_delete_member(ip) != 0) {
-		perror(RED "recv_quit: id not found" RESET);
+	if (List_delete_member(id) != 0) {
+		perror(RED "recv_quit: ip not found" RESET);
 		return -1;
 	}
 	pthread_mutex_unlock(&mutex);
