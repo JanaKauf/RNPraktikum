@@ -529,7 +529,7 @@ recv_quit (uint8_t *id_f, const uint32_t ip, uint16_t lenght) {
 
 	uint8_t * id;
 
-	strncpy(id, id_f, lenght - 1);
+	strncpy(id, id_f, lenght);
 
 	printf("@%s: quit\n", id);
 
